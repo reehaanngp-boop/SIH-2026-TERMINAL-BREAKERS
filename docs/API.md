@@ -337,7 +337,7 @@ curl -X POST http://localhost:8000/api/v1/registry/verify \
   "member_name": "Maa",
   "match": true,
   "similarity": 0.78,
-  "threshold": 0.42,
+  "threshold": 0.5,
   "guidance": {
     "en": "Voice matches the enrolled sample for Maa.",
     "hi": "आवाज़ माँ के दर्ज नमूने से मेल खाती है।"

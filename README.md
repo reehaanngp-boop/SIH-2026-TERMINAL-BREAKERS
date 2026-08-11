@@ -33,7 +33,7 @@ Scammers now use AI-cloned voices and real-time deepfake video to impersonate po
 ### 🎙️ Multi-Modal Scam Detection
 - **ASR Transcription** — Whisper-based speech-to-text (CPU int8, offline)
 - **Voice Anti-Spoofing** — AASIST model detects AI-generated/cloned voices
-- **Video Deepfake Analysis** — OpenCV Haar cascade frame-level tampering detection
+- **Video Deepfake Analysis** — MesoNet CNN + OpenCV frame-level tampering detection
 - **Scam Script Classifier** — TF-IDF + Logistic Regression matching 6 scam categories
 
 ### 📊 Explainable Risk Engine
@@ -139,14 +139,14 @@ Upload / transcript
    └─ AnalysisPipeline
         ├─ ASR        faster-whisper (CPU int8)           → transcript, language
         ├─ Voice      AASIST anti-spoof (PyTorch)          → AI-voice score
-        ├─ Video      OpenCV Haar cascade frame analysis    → editing score
-        └─ Text       TF-IDF + LogisticRegression (6 cls)  → scam category + probability
+        ├─ Video      MesoNet + OpenCV frame analysis        → editing score
+        └─ Text       TF-IDF + LogisticRegression (7 cls)  → scam category + probability
         └─ RiskEngine  weights {voice:0.40, text:0.35, video:0.25}
                        thresholds LOW<40<MEDIUM<65<HIGH
                        critical-escalation (1 crit ×1.05, 2+ ×1.15+0.05)
 
-Registry (proactive)  MFCC-stats embedding (52-D) → cosine similarity
-                      threshold 0.42
+Registry (proactive)  ECAPA-TDNN speaker embedding (192-D) → cosine similarity
+                      threshold 0.5 (falls back to MFCC-stats 52-D)
 ```
 
 ### Project Structure
@@ -243,7 +243,7 @@ All settings are configurable via environment variables or a `.env` file:
 | `WHISPER_MODEL_SIZE` | `small` | ASR model (tiny/base/small/medium) |
 | `ENABLE_AASIST` | `true` | Voice anti-spoofing model |
 | `MAX_CONCURRENT_JOBS` | `2` | Parallel analysis limit |
-| `VERIFY_SIMILARITY_THRESHOLD` | `0.42` | Speaker verification threshold |
+| `VERIFY_SIMILARITY_THRESHOLD` | `0.5` | Speaker verification threshold |
 | `CORS_ORIGINS` | `http://localhost:5173,...` | Allowed origins |
 
 See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full list.
@@ -254,16 +254,27 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the full list.
 
 ```bash
 cd backend
-pytest -q                # 28 tests (~30s for slow Whisper test)
+pytest -q                # 92 tests (~30s for slow Whisper test)
 pytest -q -m "not slow"  # Skip slow tests
 ```
 
 | Module | Tests |
 |--------|-------|
-| Risk engine | 8 |
-| Scam classifier | 5 |
-| Registry service | 6 |
-| API endpoints | 9 |
+| API endpoints (`test_api.py`) | 9 |
+| LLM analysis (`test_llm_analysis.py`) | 19 |
+| Scam classifier (`test_scam_classifier.py`) | 5 |
+| Registry service (`test_registry_service.py`) | 9 |
+| Risk engine (`test_risk_engine.py`) | 9 |
+| Video deepfake (`test_video_deepfake.py`) | 4 |
+| Auth (`test_auth.py`) | 9 |
+| Test cases (`test_cases.py`) | 9 |
+| Evidence (`test_evidence.py`) | 5 |
+| Reports (`test_reports.py`) | 4 |
+| Analytics (`test_analytics.py`) | 2 |
+| Phone (`test_phone.py`) | 3 |
+| People (`test_people.py`) | 3 |
+| Voice match (`test_voice_match.py`) | 2 |
+| **Total** | **92** |
 
 ### E2E Verification
 

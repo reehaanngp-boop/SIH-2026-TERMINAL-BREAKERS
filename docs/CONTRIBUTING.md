@@ -85,7 +85,7 @@ cd backend
 pytest -q
 ```
 
-All 28 tests should pass. The slow test loads Whisper and takes ~30 seconds.
+All 92 tests should pass. The slow test loads Whisper and takes ~30 seconds.
 
 ---
 

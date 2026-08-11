@@ -94,7 +94,7 @@ A step-by-step guide for presenting DigiRaksha at SIH 2026 or other events.
 
 **Key points:**
 - All processing is **local** — no data leaves the server.
-- **28 tests** passing.
+- **92 tests** passing.
 - Graceful degradation when models are unavailable.
 
 ---

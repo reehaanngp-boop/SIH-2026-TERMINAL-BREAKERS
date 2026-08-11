@@ -239,7 +239,7 @@ All settings can be configured via environment variables or a `.env` file in the
 | `MAX_CONCURRENT_JOBS` | `2` | Max parallel analysis jobs |
 | `VIDEO_FRAME_INTERVAL` | `5` | Analyse every Nth video frame |
 | `VIDEO_MAX_FRAMES` | `240` | Max video frames analysed |
-| `VERIFY_SIMILARITY_THRESHOLD` | `0.42` | Speaker verification threshold |
+| `VERIFY_SIMILARITY_THRESHOLD` | `0.5` | Speaker verification threshold |
 | `CORS_ORIGINS` | `http://localhost:5173,http://localhost:3000` | Allowed CORS origins (comma-separated) |
 
 ---

@@ -89,7 +89,7 @@ cd backend
 ```
 
 - API + Swagger docs: http://127.0.0.1:8000/docs
-- Health check: http://127.0.0.1:8000/health
+- Health check: http://127.0.0.1:8000/api/v1/health
 
 ### Frontend (Terminal 2)
 
