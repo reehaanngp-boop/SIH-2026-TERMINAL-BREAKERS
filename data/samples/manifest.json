@@ -1,0 +1,39 @@
+[
+  {
+    "file": "scam_digital_arrest.wav",
+    "category": "digital_arrest",
+    "expected": "high",
+    "transcript": "Hello, this is the Central Bureau of Investigation. A case has been registered against you for money laundering. You are under digital arrest. You must stay on this video call until the verification is complete. Pay the verification fee immediately or the police will arrest you. Do not tell anyone about this investigation.",
+    "duration_seconds": null
+  },
+  {
+    "file": "scam_courier.wav",
+    "category": "fake_courier",
+    "expected": "high",
+    "transcript": "Good morning. Your international courier parcel has been stopped at customs. A parcel sent in your name contains drugs and foreign currency. The narcotics control bureau has opened a case about your parcel. You need to pay the customs clearance fee to release the parcel today itself.",
+    "duration_seconds": null
+  },
+  {
+    "file": "scam_otp.wav",
+    "category": "otp_phishing",
+    "expected": "high",
+    "transcript": "Namaste, this is your bank calling. Your account has been blocked due to suspicious activity. Your KYC is incomplete and your account will be frozen. Share the OTP you received to verify your account immediately.",
+    "duration_seconds": null
+  },
+  {
+    "file": "benign_restaurant.wav",
+    "category": "benign",
+    "expected": "low",
+    "note": "TTS audio is itself synthetic, so AASIST flags the *voice* as AI-generated (medium overall). A real human voice scores low — demonstrate low risk with the transcript mode instead.",
+    "transcript": "Good afternoon. This is the restaurant calling to confirm your food order. Your order will be delivered in twenty minutes. Thank you.",
+    "duration_seconds": null
+  },
+  {
+    "file": "benign_family.wav",
+    "category": "benign",
+    "expected": "low",
+    "note": "TTS audio is itself synthetic, so AASIST flags the *voice* as AI-generated (medium overall). A real human voice scores low — demonstrate low risk with the transcript mode instead.",
+    "transcript": "Hi dad, it's me. I will reach home by evening. No need to worry. The train is on time. I'll see you soon.",
+    "duration_seconds": null
+  }
+]

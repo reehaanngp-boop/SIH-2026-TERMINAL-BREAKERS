@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DigiRaksha — AI Shield Against Digital Arrest & Deepfake Scam Calls</title>
+<meta name="description" content="AI-powered detection and awareness system against Digital Arrest scams, deepfake voice cloning, and telecom fraud targeting Indian citizens.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ─── Reset & Base ─────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#09090b;--bg-card:#18181b;--bg-card-hover:#27272a;
+  --border:#27272a;--border-light:#3f3f46;
+  --text:#fafafa;--text-secondary:#a1a1aa;--text-muted:#71717a;
+  --accent:#6d5cff;--accent-light:#8b7dff;--accent-glow:rgba(109,92,255,.15);
+  --green:#22c55e;--green-bg:rgba(34,197,94,.1);
+  --red:#ef4444;--red-bg:rgba(239,68,68,.1);
+  --yellow:#eab308;--yellow-bg:rgba(234,179,8,.1);
+  --blue:#3b82f6;--blue-bg:rgba(59,130,246,.1);
+  --radius:12px;--radius-sm:8px;--radius-lg:16px;
+  --font:'Inter',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --max-w:1120px;
+}
+html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
+a{color:var(--accent-light);text-decoration:none;transition:color .2s}
+a:hover{color:var(--text)}
+img{max-width:100%;display:block}
+::selection{background:var(--accent);color:#fff}
+
+/* ─── Layout ───────────────────────────────────────── */
+.container{max-width:var(--max-w);margin:0 auto;padding:0 24px}
+section{padding:96px 0}
+.section-label{font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+.section-title{font-size:clamp(28px,4vw,40px);font-weight:700;line-height:1.15;margin-bottom:16px}
+.section-desc{font-size:17px;color:var(--text-secondary);max-width:640px;line-height:1.7}
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:768px){.grid-2,.grid-3,.grid-4{grid-template-columns:1fr}}
+
+/* ─── Nav ──────────────────────────────────────────── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:16px 0;backdrop-filter:blur(20px);background:rgba(9,9,9,.8);border-bottom:1px solid var(--border);transition:all .3s}
+nav .container{display:flex;align-items:center;justify-content:space-between}
+.nav-brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px}
+.nav-brand .shield{font-size:24px}
+.nav-links{display:flex;gap:28px;align-items:center}
+.nav-links a{font-size:14px;font-weight:500;color:var(--text-secondary);transition:color .2s}
+.nav-links a:hover{color:var(--text)}
+.nav-cta{background:var(--accent);color:#fff!important;padding:8px 18px;border-radius:var(--radius-sm);font-weight:600;font-size:13px;transition:all .2s}
+.nav-cta:hover{background:var(--accent-light);transform:translateY(-1px)}
+@media(max-width:640px){.nav-links{display:none}}
+
+/* ─── Hero ─────────────────────────────────────────── */
+.hero{padding:160px 0 100px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:800px;height:800px;background:radial-gradient(circle,var(--accent-glow) 0%,transparent 70%);pointer-events:none}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:999px;padding:6px 16px 6px 8px;font-size:13px;color:var(--text-secondary);margin-bottom:28px}
+.hero-badge .dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.hero h1{font-size:clamp(40px,7vw,72px);font-weight:800;line-height:1.05;margin-bottom:20px;letter-spacing:-.03em}
+.hero h1 .gradient{background:linear-gradient(135deg,var(--accent),#a78bfa,#60a5fa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:clamp(16px,2vw,20px);color:var(--text-secondary);max-width:600px;margin:0 auto 36px;line-height:1.6}
+.hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;transition:all .2s;border:none;cursor:pointer}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-light);transform:translateY(-1px);box-shadow:0 8px 30px rgba(109,92,255,.3)}
+.btn-secondary{background:var(--bg-card);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{border-color:var(--border-light);background:var(--bg-card-hover)}
+
+/* ─── Stats ────────────────────────────────────────── */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-radius:var(--radius-lg);overflow:hidden;margin:64px auto;max-width:720px}
+.stat{background:var(--bg-card);padding:28px 20px;text-align:center}
+.stat-num{font-size:28px;font-weight:700;color:var(--text);margin-bottom:4px}
+.stat-label{font-size:13px;color:var(--text-muted);font-weight:500}
+@media(max-width:640px){.stats{grid-template-columns:repeat(2,1fr)}}
+
+/* ─── Cards ────────────────────────────────────────── */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:28px;transition:all .25s}
+.card:hover{border-color:var(--border-light);transform:translateY(-2px);box-shadow:0 8px 40px rgba(0,0,0,.3)}
+.card-icon{width:44px;height:44px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:16px}
+.card-icon.purple{background:var(--accent-glow);color:var(--accent)}
+.card-icon.green{background:var(--green-bg);color:var(--green)}
+.card-icon.red{background:var(--red-bg);color:var(--red)}
+.card-icon.yellow{background:var(--yellow-bg);color:var(--yellow)}
+.card-icon.blue{background:var(--blue-bg);color:var(--blue)}
+.card h3{font-size:16px;font-weight:600;margin-bottom:8px}
+.card p{font-size:14px;color:var(--text-secondary);line-height:1.6}
+
+/* ─── Architecture ─────────────────────────────────── */
+.arch-flow{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:40px;margin-top:40px;font-family:var(--mono);font-size:13px;line-height:1.8;overflow-x:auto;color:var(--text-secondary)}
+.arch-flow .highlight{color:var(--accent-light);font-weight:500}
+.arch-flow .green{color:var(--green)}
+.arch-flow .yellow{color:var(--yellow)}
+.arch-flow .red{color:var(--red)}
+.arch-flow .blue{color:var(--blue)}
+
+/* ─── Tabs ─────────────────────────────────────────── */
+.tabs{display:flex;gap:4px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:4px;width:fit-content;margin-bottom:24px}
+.tab{padding:8px 18px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;color:var(--text-secondary);cursor:pointer;transition:all .2s;border:none;background:none;font-family:var(--font)}
+.tab.active{background:var(--accent);color:#fff}
+.tab:hover:not(.active){color:var(--text);background:var(--bg-card-hover)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* ─── Code Block ───────────────────────────────────── */
+.code-block{background:#0c0c0e;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--border);background:var(--bg-card)}
+.code-header span{font-size:12px;font-weight:500;color:var(--text-muted)}
+.code-header .dots{display:flex;gap:6px}
+.code-header .dots i{width:10px;height:10px;border-radius:50%;display:block}
+.code-header .dots i:nth-child(1){background:#ef4444}
+.code-header .dots i:nth-child(2){background:#eab308}
+.code-header .dots i:nth-child(3){background:#22c55e}
+.code-body{padding:16px 20px;font-family:var(--mono);font-size:13px;line-height:1.7;overflow-x:auto;white-space:pre;color:var(--text-secondary)}
+.code-body .cmd{color:var(--green)}
+.code-body .comment{color:var(--text-muted)}
+.code-body .string{color:var(--yellow)}
+.code-body .flag{color:var(--accent-light)}
+
+/* ─── API Table ────────────────────────────────────── */
+.api-table{width:100%;border-collapse:collapse;font-size:14px}
+.api-table th{text-align:left;padding:12px 16px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);border-bottom:1px solid var(--border)}
+.api-table td{padding:12px 16px;border-bottom:1px solid var(--border);color:var(--text-secondary)}
+.api-table tr:last-child td{border-bottom:none}
+.api-table tr:hover td{background:var(--bg-card)}
+.method{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;font-family:var(--mono);text-transform:uppercase}
+.method.get{background:var(--green-bg);color:var(--green)}
+.method.post{background:var(--blue-bg);color:var(--blue)}
+.method.delete{background:var(--red-bg);color:var(--red)}
+
+/* ─── Detection ────────────────────────────────────── */
+.detection-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:32px}
+@media(max-width:768px){.detection-grid{grid-template-columns:1fr}}
+.detection-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden}
+.detection-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.detection-card.critical::before{background:var(--red)}
+.detection-card.warning::before{background:var(--yellow)}
+.detection-card.info::before{background:var(--blue)}
+.detection-card .tag{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.detection-card.critical .tag{color:var(--red)}
+.detection-card.warning .tag{color:var(--yellow)}
+.detection-card.info .tag{color:var(--blue)}
+.detection-card h4{font-size:15px;font-weight:600;margin-bottom:6px}
+.detection-card p{font-size:13px;color:var(--text-muted);line-height:1.5}
+
+/* ─── Footer ───────────────────────────────────────── */
+footer{border-top:1px solid var(--border);padding:48px 0;text-align:center}
+footer p{font-size:13px;color:var(--text-muted)}
+footer .links{display:flex;gap:24px;justify-content:center;margin-top:12px}
+footer .links a{font-size:13px;color:var(--text-muted)}
+footer .links a:hover{color:var(--text)}
+
+/* ─── Separator ────────────────────────────────────── */
+.sep{height:1px;background:var(--border);max-width:var(--max-w);margin:0 auto}
+
+/* ─── Animations ───────────────────────────────────── */
+.fade-in{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+.fade-in.visible{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- ─── Nav ──────────────────────────────────────────── -->
+<nav>
+  <div class="container">
+    <div class="nav-brand">
+      <span class="shield">🛡️</span>
+      <span>DigiRaksha</span>
+    </div>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#install">Install</a>
+      <a href="#api">API</a>
+      <a href="https://github.com/Farhaan-jpg/digi-raksha" class="nav-cta">Star on GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ─── Hero ─────────────────────────────────────────── -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-badge"><span class="dot"></span> Built for Smart India Hackathon 2024</div>
+    <h1>AI Shield Against<br><span class="gradient">Digital Arrest Scams</span></h1>
+    <p class="hero-sub">Detect deepfake voice cloning, video tampering, and telecom fraud — with explainable results in English and Hindi. All processing runs locally. No data leaves your server.</p>
+    <div class="hero-actions">
+      <a href="#install" class="btn btn-primary">Get Started →</a>
+      <a href="#api" class="btn btn-secondary">View API Docs</a>
+      <a href="https://github.com/Farhaan-jpg/digi-raksha" class="btn btn-secondary">⭐ GitHub</a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Stats ────────────────────────────────────────── -->
+<div class="container">
+  <div class="stats">
+    <div class="stat"><div class="stat-num">4</div><div class="stat-label">AI Detectors</div></div>
+    <div class="stat"><div class="stat-num">28</div><div class="stat-label">Tests Passing</div></div>
+    <div class="stat"><div class="stat-num">6</div><div class="stat-label">Scam Categories</div></div>
+    <div class="stat"><div class="stat-num">2</div><div class="stat-label">Languages (EN/HI)</div></div>
+  </div>
+</div>
+
+<!-- ─── Features ─────────────────────────────────────── -->
+<section id="features">
+  <div class="container">
+    <div class="section-label">Features</div>
+    <div class="section-title">Everything you need to<br>detect and prevent telecom fraud</div>
+    <p class="section-desc">Multi-modal AI analysis combining voice, video, and text signals into a single explainable risk verdict.</p>
+    <div class="grid-3" style="margin-top:40px">
+      <div class="card fade-in">
+        <div class="card-icon purple">🎙️</div>
+        <h3>ASR Transcription</h3>
+        <p>Whisper-based speech-to-text running locally on CPU (int8 quantised). Auto-detects language from audio.</p>
+      </div>
+      <div class="card fade-in">
+        <div class="card-icon red">🤖</div>
+        <h3>Voice Anti-Spoof</h3>
+        <p>AASIST deep learning model detects AI-generated and cloned voices with high accuracy. Falls back to heuristics gracefully.</p>
+      </div>
+      <div class="card fade-in">
+        <div class="card-icon yellow">🎬</div>
+        <h3>Video Deepfake</h3>
+        <p>OpenCV Haar cascade frame-level analysis detects face manipulation, frame duplication, and editing artefacts.</p>
+      </div>
+      <div class="card fade-in">
+        <div class="card-icon green">📝</div>
+        <h3>Scam Classifier</h3>
+        <p>TF-IDF + Logistic Regression matching 6 fraud categories: digital arrest, fake courier, OTP phishing, kin emergency, and more.</p>
+      </div>
+      <div class="card fade-in">
+        <div class="card-icon blue">📊</div>
+        <h3>Explainable Risk Engine</h3>
+        <p>Weighted aggregation across all detectors. Every score comes with specific red flags and actionable next steps — not a black box.</p>
+      </div>
+      <div class="card fade-in">
+        <div class="card-icon purple">👨‍👩‍👧</div>
+        <h3>Family Safe-Voice Registry</h3>
+        <p>Pre-enrol family voices. Instantly verify suspicious "relative in trouble" calls against enrolled speaker embeddings.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- ─── Detection Categories ─────────────────────────── -->
+<section>
+  <div class="container">
+    <div class="section-label">Detection</div>
+    <div class="section-title">Catches 6 types of telecom fraud</div>
+    <p class="section-desc">The scam classifier is trained on synthetic data generated from I4C/RBI advisory templates and matches real-world scam patterns.</p>
+    <div class="detection-grid">
+      <div class="detection-card critical">
+        <div class="tag">Critical</div>
+        <h4>Digital Arrest Scam</h4>
+        <p>Fake police/CBI/customs impersonation. Threats of arrest, video call demands, "verification fee" payments.</p>
+      </div>
+      <div class="detection-card critical">
+        <div class="tag">Critical</div>
+        <h4>Fake Courier / Parcel</h4>
+        <p>"Your parcel contains drugs" trap. Creates panic to push bank detail sharing or fee payments.</p>
+      </div>
+      <div class="detection-card critical">
+        <div class="tag">Critical</div>
+        <h4>OTP / Bank Phishing</h4>
+        <p>Requests for OTPs, PINs, or UPI details. No genuine bank ever asks for these over a call.</p>
+      </div>
+      <div class="detection-card critical">
+        <div class="tag">Critical</div>
+        <h4>Kin Emergency Fraud</h4>
+        <p>"Your relative is in trouble" — often paired with AI voice cloning to make the impersonation convincing.</p>
+      </div>
+      <div class="detection-card warning">
+        <div class="tag">Warning</div>
+        <h4>Generic Pressure Tactics</h4>
+        <p>Urgency, secrecy, threats, or requests for personal/financial details in unrecognised patterns.</p>
+      </div>
+      <div class="detection-card info">
+        <div class="tag">Safe</div>
+        <h4>Benign Conversation</h4>
+        <p>No scam pattern detected. Normal conversation — restaurant orders, family updates, etc.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- ─── Architecture ─────────────────────────────────── -->
+<section id="architecture">
+  <div class="container">
+    <div class="section-label">Architecture</div>
+    <div class="section-title">How DigiRaksha works</div>
+    <p class="section-desc">A multi-stage pipeline that runs four AI models in parallel and aggregates their outputs into a single explainable verdict.</p>
+    <div class="arch-flow">
+<span class="comment">│  Upload / transcript</span>
+<span class="comment">│</span>
+<span class="highlight">└─ AnalysisPipeline</span>
+<span class="highlight">     ├─ ASR</span>       <span class="blue">faster-whisper (CPU int8)</span>        → transcript, language
+<span class="highlight">     ├─ Voice</span>     <span class="red">AASIST anti-spoof (PyTorch)</span>       → AI-voice score
+<span class="highlight">     ├─ Video</span>     <span class="yellow">OpenCV Haar cascade</span>              → editing score
+<span class="highlight">     └─ Text</span>      <span class="green">TF-IDF + LogisticRegression</span>      → scam category + probability
+<span class="highlight">     └─ RiskEngine</span> <span class="comment">weights {voice:0.40, text:0.35, video:0.25}</span>
+                      <span class="comment">thresholds LOW&lt;40&lt;MEDIUM&lt;65&lt;HIGH</span>
+                      <span class="comment">critical-escalation (1 crit ×1.05, 2+ ×1.15+0.05)</span>
+
+<span class="highlight">Registry (proactive)</span>  <span class="blue">MFCC embedding (52-D)</span> → cosine similarity
+                       <span class="comment">threshold 0.42 (config: verify_similarity_threshold)</span>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- ─── Install ──────────────────────────────────────── -->
+<section id="install">
+  <div class="container">
+    <div class="section-label">Installation</div>
+    <div class="section-title">Get started in minutes</div>
+    <p class="section-desc">Three ways to run DigiRaksha — pick whichever fits your setup.</p>
+
+    <div class="tabs" style="margin-top:40px">
+      <button class="tab active" onclick="switchTab(event,'docker')">Docker</button>
+      <button class="tab" onclick="switchTab(event,'local')">Local Dev</button>
+      <button class="tab" onclick="switchTab(event,'api')">Quick API</button>
+    </div>
+
+    <!-- Docker -->
+    <div id="docker" class="tab-content active">
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><i></i><i></i><i></i></div>
+          <span>terminal</span>
+        </div>
+        <div class="code-body"><span class="cmd">git clone</span> https://github.com/Farhaan-jpg/digi-raksha.git
+<span class="cmd">cd</span> digi-raksha
+<span class="cmd">docker compose up</span> <span class="flag">--build -d</span>
+
+<span class="comment"># → http://localhost:8000        (Full app — React SPA + API)</span>
+<span class="comment"># → http://localhost:8000/docs   (Swagger API docs)</span></div>
+      </div>
+    </div>
+
+    <!-- Local -->
+    <div id="local" class="tab-content">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="code-block">
+          <div class="code-header">
+            <div class="dots"><i></i><i></i><i></i></div>
+            <span>backend</span>
+          </div>
+          <div class="code-body"><span class="cmd">cd</span> digi-raksha/backend
+<span class="cmd">python</span> <span class="flag">-m</span> venv .venv
+.venv\Scripts\activate
+<span class="cmd">pip install</span> <span class="flag">-e ".[ml]"</span>
+<span class="cmd">uvicorn</span> app.main:app <span class="flag">--port 8000</span></div>
+        </div>
+        <div class="code-block">
+          <div class="code-header">
+            <div class="dots"><i></i><i></i><i></i></div>
+            <span>frontend (hot reload)</span>
+          </div>
+          <div class="code-body"><span class="cmd">cd</span> digi-raksha/frontend
+<span class="cmd">npm install</span> <span class="flag">--include=dev</span>
+<span class="cmd">npm run dev</span>
+
+<span class="comment"># → http://localhost:5173</span>
+<span class="comment"># → Proxies /api to :8000</span></div>
+        </div>
+      </div>
+      <div style="margin-top:16px;font-size:13px;color:var(--text-muted)">
+        <strong>Requirements:</strong> Python 3.12.x · Node.js 18+ · npm 9+
+      </div>
+    </div>
+
+    <!-- API -->
+    <div id="api" class="tab-content">
+      <div class="code-block">
+        <div class="code-header">
+          <div class="dots"><i></i><i></i><i></i></div>
+          <span>curl</span>
+        </div>
+        <div class="code-body"><span class="comment"># Analyse a transcript (sync)</span>
+<span class="cmd">curl -X POST</span> http://localhost:8000/api/v1/analyze/transcript \
+  <span class="flag">-H</span> <span class="string">"Content-Type: application/json"</span> \
+  <span class="flag">-d</span> <span class="string">'{"text": "This is CBI, you are under digital arrest. Pay the verification fee."}'</span>
+
+<span class="comment"># Upload a recording (async → poll job)</span>
+<span class="cmd">curl -X POST</span> http://localhost:8000/api/v1/analyze \
+  <span class="flag">-F</span> <span class="string">"file=@data/samples/scam_digital_arrest.wav"</span>
+
+<span class="comment"># Check scan history</span>
+<span class="cmd">curl</span> http://localhost:8000/api/v1/analyze/history</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- ─── API Reference ────────────────────────────────── -->
+<section id="api">
+  <div class="container">
+    <div class="section-label">API Reference</div>
+    <div class="section-title">15 REST endpoints under <code style="font-family:var(--mono);color:var(--accent-light)">/api/v1</code></div>
+    <p class="section-desc">Full Swagger docs at <code>/docs</code>. All responses are JSON.</p>
+
+    <div style="margin-top:40px;display:grid;gap:24px">
+      <!-- System -->
+      <div>
+        <h3 style="font-size:14px;font-weight:600;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px">System</h3>
+        <div class="code-block">
+          <div class="code-body" style="padding:0">
+            <table class="api-table">
+              <tr><td><span class="method get">GET</span></td><td><code>/health</code></td><td>Liveness probe</td></tr>
+              <tr><td><span class="method get">GET</span></td><td><code>/meta</code></td><td>Detector availability + report channels (1930, cybercrime.gov.in)</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analysis -->
+      <div>
+        <h3 style="font-size:14px;font-weight:600;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px">Analysis</h3>
+        <div class="code-block">
+          <div class="code-body" style="padding:0">
+            <table class="api-table">
+              <tr><td><span class="method post">POST</span></td><td><code>/analyze/transcript</code></td><td>Analyse a raw transcript (sync)</td></tr>
+              <tr><td><span class="method post">POST</span></td><td><code>/analyze</code></td><td>Upload audio/video for analysis (async → returns job_id)</td></tr>
+              <tr><td><span class="method get">GET</span></td><td><code>/analyze/jobs/{job_id}</code></td><td>Poll job status, get result when complete</td></tr>
+              <tr><td><span class="method get">GET</span></td><td><code>/analyze/results/{scan_id}</code></td><td>Fetch completed result by scan ID</td></tr>
+              <tr><td><span class="method get">GET</span></td><td><code>/analyze/history</code></td><td>Recent scan history (max 200)</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Registry -->
+      <div>
+        <h3 style="font-size:14px;font-weight:600;color:var(--text-muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px">Family Safe-Voice Registry</h3>
+        <div class="code-block">
+          <div class="code-body" style="padding:0">
+            <table class="api-table">
+              <tr><td><span class="method post">POST</span></td><td><code>/registry/members</code></td><td>Register a trusted family member</td></tr>
+              <tr><td><span class="method get">GET</span></td><td><code>/registry/members</code></td><td>List all registered members</td></tr>
+              <tr><td><span class="method delete">DEL</span></td><td><code>/registry/members/{id}</code></td><td>Remove a member + voice samples</td></tr>
+              <tr><td><span class="method post">POST</span></td><td><code>/registry/members/{id}/enroll</code></td><td>Enrol a voice sample (extracts MFCC embedding)</td></tr>
+              <tr><td><span class="method post">POST</span></td><td><code>/registry/verify</code></td><td>Verify a voice note against a member's enrolled voice</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- ─── Tech Stack ───────────────────────────────────── -->
+<section>
+  <div class="container">
+    <div class="section-label">Tech Stack</div>
+    <div class="section-title">Built with modern, proven tools</div>
+    <div class="grid-4" style="margin-top:32px">
+      <div class="card" style="text-align:center;padding:20px">
+        <div style="font-size:28px;margin-bottom:8px">🐍</div>
+        <div style="font-weight:600;font-size:14px">Python 3.12</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Backend runtime</div>
+      </div>
+      <div class="card" style="text-align:center;padding:20px">
+        <div style="font-size:28px;margin-bottom:8px">⚡</div>
+        <div style="font-weight:600;font-size:14px">FastAPI</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Web framework</div>
+      </div>
+      <div class="card" style="text-align:center;padding:20px">
+        <div style="font-size:28px;margin-bottom:8px">⚛️</div>
+        <div style="font-weight:600;font-size:14px">React 19</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Frontend SPA</div>
+      </div>
+      <div class="card" style="text-align:center;padding:20px">
+        <div style="font-size:28px;margin-bottom:8px">🔥</div>
+        <div style="font-weight:600;font-size:14px">Vite</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Build tool</div>
+      </div>
+      <div class="card" style="text-align:center;padding:20px">
+        <div style="font-size:28px;margin-bottom:8px">🧠</div>
+        <div style="font-weight:600;font-size:14px">faster-whisper</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">ASR (CPU int8)</div>
+      </div>
+      <div class="card" style="text-align:center;padding:20px">
+        <div style="font-size:28px;margin-bottom:8px">🎭</div>
+        <div style="font-weight:600;font-size:14px">AASIST</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Voice anti-spoof</div>
+      </div>
+      <div class="card" style="text-align:center;padding:20px">
+        <div style="font-size:28px;margin-bottom:8px">👁️</div>
+        <div style="font-weight:600;font-size:14px">OpenCV</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Video analysis</div>
+      </div>
+      <div class="card" style="text-align:center;padding:20px">
+        <div style="font-size:28px;margin-bottom:8px">🗄️</div>
+        <div style="font-weight:600;font-size:14px">SQLite</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px">Database (WAL)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- ─── Security & Privacy ───────────────────────────── -->
+<section>
+  <div class="container">
+    <div class="grid-2">
+      <div>
+        <div class="section-label">Privacy First</div>
+        <div class="section-title">Your data<br>never leaves your server</div>
+        <p class="section-desc" style="margin-bottom:24px">All AI processing runs locally. No external APIs, no analytics, no telemetry. The system works offline.</p>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text-secondary)">
+            <span style="color:var(--green);font-size:18px">✓</span> No data sent to external services
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text-secondary)">
+            <span style="color:var(--green);font-size:18px">✓</span> All models run on local CPU
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text-secondary)">
+            <span style="color:var(--green);font-size:18px">✓</span> No user accounts or tracking
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text-secondary)">
+            <span style="color:var(--green);font-size:18px">✓</span> Works fully offline
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="section-label">Reporting</div>
+        <div class="section-title">Report scams<br>to official channels</div>
+        <p class="section-desc" style="margin-bottom:24px">Every high-risk result includes direct links to India's official cyber crime reporting infrastructure.</p>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <a href="tel:1930" style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text-secondary);padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm)">
+            <span style="font-size:20px">📞</span>
+            <div><strong style="color:var(--text)">1930</strong><br><span style="font-size:12px">National Cyber Crime Helpline</span></div>
+          </a>
+          <a href="https://cybercrime.gov.in" target="_blank" style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text-secondary);padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm)">
+            <span style="font-size:20px">🌐</span>
+            <div><strong style="color:var(--text)">cybercrime.gov.in</strong><br><span style="font-size:12px">National Cyber Crime Reporting Portal</span></div>
+          </a>
+          <a href="https://i4c.mha.gov.in" target="_blank" style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text-secondary);padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm)">
+            <span style="font-size:20px">🏛️</span>
+            <div><strong style="color:var(--text)">i4c.mha.gov.in</strong><br><span style="font-size:12px">Indian Cyber Crime Coordination Centre</span></div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="sep"></div>
+
+<!-- ─── CTA ──────────────────────────────────────────── -->
+<section style="text-align:center">
+  <div class="container">
+    <div class="section-title" style="font-size:clamp(24px,3.5vw,36px)">Ready to protect against<br>digital arrest scams?</div>
+    <p class="section-desc" style="margin:0 auto 32px">Star the repo, clone it, and have DigiRaksha running in under 5 minutes.</p>
+    <div class="hero-actions">
+      <a href="https://github.com/Farhaan-jpg/digi-raksha" class="btn btn-primary">⭐ Star on GitHub</a>
+      <a href="https://github.com/Farhaan-jpg/digi-raksha/archive/refs/heads/main.zip" class="btn btn-secondary">Download ZIP</a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Footer ───────────────────────────────────────── -->
+<footer>
+  <div class="container">
+    <p>DigiRaksha — AI-based Digital Arrest & Deepfake Scam Call Shield</p>
+    <p style="margin-top:4px">Built with ❤️ for Smart India Hackathon 2024 · MIT License</p>
+    <div class="links">
+      <a href="https://github.com/Farhaan-jpg/digi-raksha">GitHub</a>
+      <a href="https://github.com/Farhaan-jpg/digi-raksha/blob/main/docs/API.md">API Docs</a>
+      <a href="https://github.com/Farhaan-jpg/digi-raksha/blob/main/docs/DEPLOYMENT.md">Deployment</a>
+      <a href="https://github.com/Farhaan-jpg/digi-raksha/blob/main/docs/CONTRIBUTING.md">Contributing</a>
+      <a href="https://github.com/Farhaan-jpg/digi-raksha/blob/main/LICENSE">MIT License</a>
+    </div>
+  </div>
+</footer>
+
+<!-- ─── Scripts ──────────────────────────────────────── -->
+<script>
+// Tab switching
+function switchTab(e, id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  e.target.classList.add('active');
+  document.getElementById(id).classList.add('active');
+}
+
+// Fade-in on scroll
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

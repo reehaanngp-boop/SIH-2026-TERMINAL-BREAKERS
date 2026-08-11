@@ -1,0 +1,61 @@
+[project]
+name = "digi-raksha-backend"
+version = "0.1.0"
+description = "DigiRaksha — AI-based Digital Arrest & Deepfake Scam Call Shield (backend API)"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "MIT" }
+dependencies = [
+    # Web framework
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "python-multipart>=0.0.9",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+
+    # Persistence
+    "sqlalchemy>=2.0",
+
+    # Audio / ASR
+    "faster-whisper>=1.0",
+    "soundfile>=0.12",
+    "librosa>=0.10",
+    "numpy>=1.26",
+
+    # Video (pinned <5: OpenCV 5 removed the Haar CascadeClassifier API used
+    # by the frame-level deepfake analyser)
+    "opencv-python>=4.9,<5",
+    "imageio-ffmpeg>=0.4.9",
+
+    # ML / text
+    "scikit-learn>=1.4",
+    "joblib>=1.3",
+
+    # Sample generation (offline TTS on Windows via SAPI5)
+    "pyttsx3>=2.90",
+
+    # Police suite: formal PDF case reports (pure-Python, no native deps)
+    "reportlab>=4.0",
+]
+
+[project.optional-dependencies]
+# Heavy ML dependencies needed only for the optional AASIST voice anti-spoofing
+# model and advanced speaker embeddings. See ml/requirements-ml.txt.
+ml = ["torch>=2.2", "scipy>=1.11"]
+
+[project.scripts]
+digiraksha = "app.main:run"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = [
+    "slow: tests that load heavy models (Whisper) and can take minutes",
+]
