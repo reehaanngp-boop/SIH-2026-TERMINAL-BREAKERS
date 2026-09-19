@@ -35,6 +35,9 @@ export default function App() {
   const authRef = useRef(auth);
   authRef.current = auth;
 
+  const isLocalhost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+  const [initMsg, setInitMsg] = useState("Initializing DigiRaksha AI engines...");
+
   useEffect(() => {
     onAuthError(() => {
       // Only force-lock while inside the app — a failed login already 401s.
@@ -45,15 +48,35 @@ export default function App() {
       }
     });
 
-    api
-      .authStatus()
-      .then((s) => {
+    let timer: number;
+    let attempts = 0;
+    const maxAttempts = isLocalhost ? 20 : 6;
+
+    const checkBackend = async () => {
+      try {
+        const s = await api.authStatus();
         setOfficerName(s.officer_name ?? null);
         if (s.authenticated) setAuth("app");
         else setAuth(s.setup_required ? "setup" : "login");
-      })
-      .catch(() => setAuth("offline"));
-  }, [push]);
+      } catch {
+        attempts++;
+        if (attempts < maxAttempts) {
+          if (isLocalhost) {
+            setInitMsg(`Starting DigiRaksha AI engine... (${attempts}/${maxAttempts})`);
+          } else {
+            setInitMsg("Connecting to backend...");
+          }
+          timer = window.setTimeout(checkBackend, 1200);
+        } else {
+          setAuth("offline");
+        }
+      }
+    };
+
+    checkBackend();
+
+    return () => clearTimeout(timer);
+  }, [push, isLocalhost]);
 
   const onAuthed = (name: string) => {
     setOfficerName(name);
@@ -94,7 +117,7 @@ export default function App() {
     return (
       <div className="center" style={{ minHeight: "100vh" }}>
         <div className="spinner" />
-        <p>{t("status.loading")}</p>
+        <p style={{ marginTop: 12 }}>{initMsg}</p>
       </div>
     );
   }
@@ -108,35 +131,56 @@ export default function App() {
             <div className="auth-title">DigiRaksha</div>
           </div>
           <div className="error-banner">{t("err.network")}</div>
-          <p className="muted small" style={{ marginTop: 10, marginBottom: 12 }}>
-            Connect to your active backend (Cloudflare Tunnel or Localhost):
-          </p>
-          <input
-            className="input"
-            type="text"
-            placeholder="https://xxxx.trycloudflare.com or http://127.0.0.1:8000"
-            value={offlineBackendUrl}
-            onChange={(e) => setOfflineBackendUrl(e.target.value)}
-            style={{ marginBottom: 12 }}
-          />
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              type="button"
-              className="btn btn-primary"
-              style={{ flex: 1 }}
-              disabled={offlineTesting}
-              onClick={handleOfflineConnect}
-            >
-              {offlineTesting ? "Connecting…" : "Connect & Start"}
-            </button>
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => window.location.reload()}
-            >
-              {t("err.try")}
-            </button>
-          </div>
+
+          {isLocalhost ? (
+            <>
+              <p className="muted small" style={{ marginTop: 10, marginBottom: 16 }}>
+                Backend not detected on localhost:8000. Please make sure <code>DigiRaksha.bat</code> is running on your PC.
+              </p>
+              <button
+                type="button"
+                className="btn btn-primary btn-block"
+                onClick={() => {
+                  setAuth("loading");
+                  window.location.reload();
+                }}
+              >
+                Retry Connection
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="muted small" style={{ marginTop: 10, marginBottom: 12 }}>
+                Connect to your active Cloudflare Tunnel URL:
+              </p>
+              <input
+                className="input"
+                type="text"
+                placeholder="https://xxxx.trycloudflare.com"
+                value={offlineBackendUrl}
+                onChange={(e) => setOfflineBackendUrl(e.target.value)}
+                style={{ marginBottom: 12 }}
+              />
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ flex: 1 }}
+                  disabled={offlineTesting}
+                  onClick={handleOfflineConnect}
+                >
+                  {offlineTesting ? "Connecting…" : "Connect & Start"}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => window.location.reload()}
+                >
+                  {t("err.try")}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     );

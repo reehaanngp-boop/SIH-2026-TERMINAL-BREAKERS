@@ -30,8 +30,17 @@ const TOKEN_KEY = "digiraksha.token";
 const OPENROUTER_KEY = "digiraksha.openrouter_key";
 
 export function getApiBase(): string {
-  const custom = localStorage.getItem(BACKEND_URL_KEY);
-  if (custom && custom.trim()) return custom.trim().replace(/\/+$/, "");
+  if (typeof window !== "undefined") {
+    const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    const custom = localStorage.getItem(BACKEND_URL_KEY);
+    if (isLocalhost) {
+      if (custom && (custom.includes("localhost") || custom.includes("127.0.0.1"))) {
+        return custom.trim().replace(/\/+$/, "");
+      }
+      return "";
+    }
+    if (custom && custom.trim()) return custom.trim().replace(/\/+$/, "");
+  }
   return (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
 }
 
