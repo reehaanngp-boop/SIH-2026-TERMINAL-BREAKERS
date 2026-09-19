@@ -1,0 +1,684 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080, initial-scale=1.0" />
+    <title>DigiRaksha · Real UI Walkthrough Video</title>
+    <script src="assets/gsap.min.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #030712;
+        color: #f8fafc;
+        font-family: "Inter", -apple-system, sans-serif;
+        overflow: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+      #root {
+        width: 1920px;
+        height: 1080px;
+        position: relative;
+        overflow: hidden;
+        background: #030712;
+      }
+
+      /* Persistent Top Cyber HUD */
+      .top-hud {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1920px;
+        height: 64px;
+        background: rgba(3, 7, 18, 0.96);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid rgba(56, 189, 248, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 36px;
+        z-index: 200;
+      }
+      .top-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .shield-icon {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, #0284c7, #2563eb);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
+      }
+      .brand-title {
+        font-size: 18px;
+        font-weight: 800;
+        color: #ffffff;
+        letter-spacing: -0.01em;
+      }
+      .brand-sub {
+        font-size: 12px;
+        font-weight: 700;
+        color: #e0f2fe;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .live-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 9999px;
+        background: rgba(16, 185, 129, 0.15);
+        border: 1px solid #10b981;
+        font-size: 11px;
+        font-weight: 700;
+        color: #6ee7b7;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .live-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #10b981;
+        box-shadow: 0 0 8px #10b981;
+      }
+
+      .top-center {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .screen-indicator {
+        padding: 6px 18px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid rgba(56, 189, 248, 0.4);
+        border-radius: 9999px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        color: #38bdf8;
+        letter-spacing: 0.04em;
+        box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+      }
+
+      .top-right {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+      .officer-badge {
+        font-size: 13px;
+        font-weight: 600;
+        color: #cbd5e1;
+      }
+      .officer-name {
+        color: #6ee7b7;
+        font-weight: 700;
+      }
+      .cert-tag {
+        font-size: 12px;
+        font-weight: 700;
+        padding: 4px 10px;
+        background: rgba(99, 102, 241, 0.15);
+        border: 1px solid #818cf8;
+        border-radius: 6px;
+        color: #c7d2fe;
+      }
+
+      /* Screens Container & Viewport */
+      .screens-container {
+        position: absolute;
+        top: 64px;
+        left: 0;
+        width: 1920px;
+        height: 1016px;
+        overflow: hidden;
+      }
+
+      .scene-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1920px;
+        height: 1016px;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .camera-rig {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1920px;
+        height: 1016px;
+        transform-origin: center center;
+        will-change: transform;
+      }
+
+      .real-ui-img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1920px;
+        height: 1016px;
+        object-fit: cover;
+        object-position: top center;
+        filter: contrast(1.03) brightness(1.02);
+      }
+
+      /* Spotlight & Feature Callouts */
+      .spotlight-card {
+        position: absolute;
+        background: rgba(15, 23, 42, 0.96);
+        border: 2px solid #38bdf8;
+        border-radius: 12px;
+        padding: 14px 20px;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8), 0 0 24px rgba(56, 189, 248, 0.35);
+        backdrop-filter: blur(12px);
+        z-index: 50;
+        opacity: 0;
+        transform: translateY(12px) scale(0.95);
+      }
+      .spotlight-card.accent-red {
+        border-color: #f43f5e;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8), 0 0 24px rgba(244, 63, 94, 0.4);
+      }
+      .spotlight-card.accent-emerald {
+        border-color: #10b981;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8), 0 0 24px rgba(16, 185, 129, 0.4);
+      }
+      .spotlight-badge {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        font-weight: 700;
+        color: #38bdf8;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 4px;
+      }
+      .spotlight-card.accent-red .spotlight-badge { color: #fda4af; }
+      .spotlight-card.accent-emerald .spotlight-badge { color: #6ee7b7; }
+      .spotlight-title {
+        font-size: 16px;
+        font-weight: 800;
+        color: #ffffff;
+        margin-bottom: 4px;
+      }
+      .spotlight-desc {
+        font-size: 13px;
+        font-weight: 500;
+        color: #cbd5e1;
+        line-height: 1.4;
+      }
+
+      /* Callout Positions */
+      /* Scene 1: Dashboard */
+      .sc-dash-stats { top: 120px; left: 340px; width: 380px; }
+      .sc-dash-risk { top: 310px; right: 80px; width: 340px; }
+      .sc-dash-threats { bottom: 180px; right: 80px; width: 420px; }
+
+      /* Scene 2: Live Call */
+      .sc-live-caller { top: 120px; left: 360px; width: 420px; }
+      .sc-live-wave { top: 420px; left: 360px; width: 460px; }
+      .sc-live-matrix { top: 260px; right: 80px; width: 380px; }
+
+      /* Scene 3: Analyze */
+      .sc-ana-transcript { top: 180px; left: 360px; width: 440px; }
+      .sc-ana-upload { top: 180px; right: 100px; width: 440px; }
+      .sc-ana-nlp { bottom: 160px; left: 360px; width: 440px; }
+
+      /* Scene 4: Media Auth */
+      .sc-media-drop { top: 200px; left: 450px; width: 420px; }
+      .sc-media-clones { bottom: 180px; left: 340px; width: 360px; }
+      .sc-media-splice { bottom: 180px; left: 740px; width: 360px; }
+
+      /* Scene 5: SDK Docs */
+      .sc-sdk-gate { top: 150px; left: 340px; width: 460px; }
+      .sc-sdk-code { top: 280px; left: 380px; width: 520px; }
+      .sc-sdk-hold { bottom: 180px; right: 80px; width: 380px; }
+
+      /* Scene 6: Blockchain */
+      .sc-bc-stats { top: 120px; left: 340px; width: 420px; }
+      .sc-bc-verify { top: 260px; left: 340px; width: 460px; }
+      .sc-bc-blocks { bottom: 180px; left: 340px; width: 480px; }
+
+      /* Persistent Lower-Third Narration HUD */
+      .lower-hud {
+        position: absolute;
+        bottom: 24px;
+        left: 40px;
+        right: 40px;
+        height: 110px;
+        background: rgba(3, 7, 18, 0.96);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(56, 189, 248, 0.35);
+        border-radius: 16px;
+        padding: 16px 36px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 200;
+        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.85);
+      }
+      .hud-content {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .hud-header-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .hud-badge {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        font-weight: 700;
+        color: #38bdf8;
+        background: rgba(56, 189, 248, 0.15);
+        border: 1px solid #38bdf8;
+        border-radius: 6px;
+        padding: 3px 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .hud-title {
+        font-size: 20px;
+        font-weight: 800;
+        color: #ffffff;
+        letter-spacing: -0.01em;
+      }
+      .hud-desc {
+        font-size: 14px;
+        font-weight: 500;
+        color: #cbd5e1;
+        line-height: 1.4;
+      }
+
+      .hud-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
+      }
+      .hud-metric-pill {
+        padding: 6px 14px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid #10b981;
+        border-radius: 9999px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #6ee7b7;
+        font-family: "JetBrains Mono", monospace;
+      }
+      .hud-time-tag {
+        font-size: 12px;
+        font-weight: 600;
+        color: #94a3b8;
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      /* Progress Bar along bottom of Lower HUD */
+      .hud-progress-track {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: rgba(56, 189, 248, 0.15);
+        border-bottom-left-radius: 16px;
+        border-bottom-right-radius: 16px;
+        overflow: hidden;
+      }
+      .hud-progress-fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #38bdf8, #818cf8, #10b981);
+        box-shadow: 0 0 12px #38bdf8;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="composition" data-width="1920" data-height="1080">
+      <!-- 60s Beat-Synced Audio Soundtrack -->
+      <audio id="soundtrack" src="assets/music/soundtrack.mp3" data-start="0" data-duration="60" preload="auto"></audio>
+
+      <!-- Persistent Top Cyber HUD -->
+      <header class="top-hud">
+        <div class="top-left">
+          <div class="shield-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div>
+            <div class="brand-title">DigiRaksha</div>
+            <div class="brand-sub">Real Application UI Tour</div>
+          </div>
+          <div class="live-pill">
+            <div class="live-dot"></div>
+            <span>LIVE SENTINEL</span>
+          </div>
+        </div>
+
+        <div class="top-center">
+          <div class="screen-indicator" id="top-indicator">SCREEN 1 OF 6 · COMMAND DASHBOARD</div>
+        </div>
+
+        <div class="top-right">
+          <div class="officer-badge">Station Officer: <span class="officer-name">REEHAAN</span></div>
+          <div class="cert-tag">BSA SEC 65B COMPLIANT</div>
+        </div>
+      </header>
+
+      <!-- Screens Container -->
+      <main class="screens-container">
+        <!-- SCENE 1: Real Dashboard -->
+        <section class="scene-layer" id="scene-dashboard">
+          <div class="camera-rig" id="rig-dashboard" data-layout-allow-overflow>
+            <img class="real-ui-img" src="assets/screens/real_ui_dashboard.png" alt="DigiRaksha Real Dashboard UI" />
+          </div>
+
+          <div class="spotlight-card sc-dash-stats" id="callout-d1">
+            <div class="spotlight-badge">STATION TELEMETRY</div>
+            <div class="spotlight-title">Real-Time Threat Metrics</div>
+            <div class="spotlight-desc">14,892 Scans · 1,284 Clones Neutralized · ₹42.8 Cr Protected</div>
+          </div>
+
+          <div class="spotlight-card sc-dash-risk" id="callout-d2">
+            <div class="spotlight-badge">RISK ENGINE</div>
+            <div class="spotlight-title">Live Risk Donut Breakdown</div>
+            <div class="spotlight-desc">High: 4 | Low: 3 | Medium: 1 active scam vectors</div>
+          </div>
+
+          <div class="spotlight-card accent-red sc-dash-threats" id="callout-d3">
+            <div class="spotlight-badge">RECENT THREAT ALERTS</div>
+            <div class="spotlight-title">Voice Clone Flagged: 100% Risk</div>
+            <div class="spotlight-desc">ai_generated_voice.wav neutralized · High-risk coercion detected</div>
+          </div>
+        </section>
+
+        <!-- SCENE 2: Real Live Call Sentinel -->
+        <section class="scene-layer" id="scene-live-call">
+          <div class="camera-rig" id="rig-live-call" data-layout-allow-overflow>
+            <img class="real-ui-img" src="assets/screens/real_ui_live_call.png" alt="DigiRaksha Real Live Call UI" />
+          </div>
+
+          <div class="spotlight-card sc-live-caller" id="callout-lc1">
+            <div class="spotlight-badge">VOIP TRUNK INGESTION</div>
+            <div class="spotlight-title">Incoming Call: CEO Rajesh Nair</div>
+            <div class="spotlight-desc">+91 99880 12345 · Virtual VoIP Trunk · SIP TLS Encrypted</div>
+          </div>
+
+          <div class="spotlight-card sc-live-wave" id="callout-lc2">
+            <div class="spotlight-badge">DUAL-STREAM AUDIO OSCILLOSCOPE</div>
+            <div class="spotlight-title">Real-Time Frequency Spectrum</div>
+            <div class="spotlight-desc">16.0 kHz PCM16 WebRTC analyzer detecting 7.5 kHz vocoder cutoff</div>
+          </div>
+
+          <div class="spotlight-card accent-red sc-live-matrix" id="callout-lc3">
+            <div class="spotlight-badge">FORENSIC TELEMETRY MATRIX</div>
+            <div class="spotlight-title">Dhwani XLS-R 300M ONNX Model</div>
+            <div class="spotlight-desc">Sub-25ms latency · Biomechanical vocal jitter · Phase incoherence</div>
+          </div>
+        </section>
+
+        <!-- SCENE 3: Real Audio Forensics Lab -->
+        <section class="scene-layer" id="scene-analyze">
+          <div class="camera-rig" id="rig-analyze" data-layout-allow-overflow>
+            <img class="real-ui-img" src="assets/screens/real_ui_analyze.png" alt="DigiRaksha Real Analyze UI" />
+          </div>
+
+          <div class="spotlight-card sc-ana-transcript" id="callout-an1">
+            <div class="spotlight-badge">COERCION NLP SCANNER</div>
+            <div class="spotlight-title">Digital Arrest Script Detection</div>
+            <div class="spotlight-desc">Analyzes fake CBI/Customs warrants & PMLA extortion scripts</div>
+          </div>
+
+          <div class="spotlight-card sc-ana-upload" id="callout-an2">
+            <div class="spotlight-badge">MULTI-MODAL INGESTION</div>
+            <div class="spotlight-title">Audio & Video File Ingestion</div>
+            <div class="spotlight-desc">Supports WAV, MP3, M4A, OGG, FLAC, and MP4 containers</div>
+          </div>
+
+          <div class="spotlight-card accent-emerald sc-ana-nlp" id="callout-an3">
+            <div class="spotlight-badge">CHAIN OF CUSTODY</div>
+            <div class="spotlight-title">Direct Police Case Creation</div>
+            <div class="spotlight-desc">1-click direct link to Evidence Vault & Investigating Officer file</div>
+          </div>
+        </section>
+
+        <!-- SCENE 4: Real Media Authenticity Checker -->
+        <section class="scene-layer" id="scene-media-auth">
+          <div class="camera-rig" id="rig-media-auth" data-layout-allow-overflow>
+            <img class="real-ui-img" src="assets/screens/real_ui_media_auth.png" alt="DigiRaksha Real Media Authenticity UI" />
+          </div>
+
+          <div class="spotlight-card sc-media-drop" id="callout-ma1">
+            <div class="spotlight-badge">DEEPFAKE MEDIA LAB</div>
+            <div class="spotlight-title">Multi-Layer Authenticity Checker</div>
+            <div class="spotlight-desc">Comprehensive analysis of suspect audio recordings and voicemails</div>
+          </div>
+
+          <div class="spotlight-card sc-media-clones" id="callout-ma2">
+            <div class="spotlight-badge">AI CLONE DETECTION</div>
+            <div class="spotlight-title">TTS & Conversion Fingerprints</div>
+            <div class="spotlight-desc">Identifies ElevenLabs, Bark, Tortoise & HiFi-GAN artifacts</div>
+          </div>
+
+          <div class="spotlight-card accent-red sc-media-splice" id="callout-ma3">
+            <div class="spotlight-badge">EDIT & SPLICE DETECTION</div>
+            <div class="spotlight-title">Cut-and-Paste Audio Splicing</div>
+            <div class="spotlight-desc">Flags unnatural silence gaps and temporal phase discontinuities</div>
+          </div>
+        </section>
+
+        <!-- SCENE 5: Real Core Banking Gate & SDK -->
+        <section class="scene-layer" id="scene-sdk-docs">
+          <div class="camera-rig" id="rig-sdk-docs" data-layout-allow-overflow>
+            <img class="real-ui-img" src="assets/screens/real_ui_sdk_docs.png" alt="DigiRaksha Real SDK Docs UI" />
+          </div>
+
+          <div class="spotlight-card sc-sdk-gate" id="callout-sdk1">
+            <div class="spotlight-badge">ENTERPRISE INTEGRATION</div>
+            <div class="spotlight-title">Banking Wire Gate (Python SDK)</div>
+            <div class="spotlight-desc">Embeds directly into Finacle, TCS BaNCS & SWIFT authorization gates</div>
+          </div>
+
+          <div class="spotlight-card accent-red sc-sdk-code" id="callout-sdk2">
+            <div class="spotlight-badge">PRE-ACTION INTERCEPTION</div>
+            <div class="spotlight-title">₹5,00,000 Wire Transfer Threshold</div>
+            <div class="spotlight-desc">Intercepts high-value telephonic approvals before funds release</div>
+          </div>
+
+          <div class="spotlight-card accent-emerald sc-sdk-hold" id="callout-sdk3">
+            <div class="spotlight-badge">AUTOMATED QUARANTINE</div>
+            <div class="spotlight-title">REJECTED_VOICE_CLONE_DETECTED</div>
+            <div class="spotlight-desc">Automatic transaction freeze before ledger commit with audit ID</div>
+          </div>
+        </section>
+
+        <!-- SCENE 6: Real Blockchain Evidence Ledger -->
+        <section class="scene-layer" id="scene-blockchain">
+          <div class="camera-rig" id="rig-blockchain" data-layout-allow-overflow>
+            <img class="real-ui-img" src="assets/screens/real_ui_blockchain.png" alt="DigiRaksha Real Blockchain UI" />
+          </div>
+
+          <div class="spotlight-card sc-bc-stats" id="callout-bc1">
+            <div class="spotlight-badge">CHAIN INTEGRITY</div>
+            <div class="spotlight-title">SECURE_VERIFIED Block Status</div>
+            <div class="spotlight-desc">47 Total Blocks · 46 Verified Calls · 23 Fraud Interceptions</div>
+          </div>
+
+          <div class="spotlight-card accent-emerald sc-bc-verify" id="callout-bc2">
+            <div class="spotlight-badge">PUBLIC FORENSIC VALIDATOR</div>
+            <div class="spotlight-title">Voice Integrity Certificate</div>
+            <div class="spotlight-desc">Verifies SHA-256 Merkle root & cryptographic forensic signatures</div>
+          </div>
+
+          <div class="spotlight-card sc-bc-blocks" id="callout-bc3">
+            <div class="spotlight-badge">COURT-ADMISSIBLE LEDGER</div>
+            <div class="spotlight-title">BSA Section 65B Certified</div>
+            <div class="spotlight-desc">Admissible under Bharatiya Sakshya Adhiniyam 2023 / Section 65B IT Act</div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Persistent Lower-Third Narration HUD -->
+      <footer class="lower-hud">
+        <div class="hud-content">
+          <div class="hud-header-row">
+            <div class="hud-badge" id="hud-badge">COMMAND DASHBOARD</div>
+            <div class="hud-title" id="hud-title">Centralized Threat Intelligence & Fraud Telemetry</div>
+          </div>
+          <div class="hud-desc" id="hud-desc">
+            Real-time monitoring across all active VoIP trunks, tracking voice clone volume, financial exposure, and scam classification.
+          </div>
+        </div>
+
+        <div class="hud-right">
+          <div class="hud-metric-pill" id="hud-metric">LATENCY: 18ms (ONNX CPU)</div>
+          <div class="hud-time-tag" id="hud-timer">00:00 / 01:00</div>
+        </div>
+
+        <!-- Timeline Progress Fill -->
+        <div class="hud-progress-track">
+          <div class="hud-progress-fill" id="hud-progress"></div>
+        </div>
+      </footer>
+    </div>
+
+    <!-- GSAP Master Animation Choreography -->
+    <script>
+      const tl = gsap.timeline();
+      window.__timelines = window.__timelines || {};
+      window.__timelines["composition"] = tl;
+
+      // UI Text Configurations for Each Scene
+      const sceneData = [
+        {
+          indicator: "SCREEN 1 OF 6 · COMMAND DASHBOARD",
+          badge: "COMMAND DASHBOARD",
+          title: "Centralized Threat Intelligence & Fraud Telemetry",
+          desc: "Real-time monitoring across all active VoIP trunks, tracking voice clone volume, financial exposure, and scam classification.",
+          metric: "ACTIVE TRUNKS: 14,892"
+        },
+        {
+          indicator: "SCREEN 2 OF 6 · LIVE CALL SENTINEL",
+          badge: "LIVE CALL SENTINEL",
+          title: "Real-Time Telephony Stream & Neural Vocoder Detection",
+          desc: "Intercepts live VoIP audio in <30ms, analyzing vocal tract harmonics, pitch micro-jitter, and neural vocoder spectral cutoffs.",
+          metric: "LATENCY: 18ms (ONNX CPU)"
+        },
+        {
+          indicator: "SCREEN 3 OF 6 · AUDIO FORENSICS LAB",
+          badge: "AUDIO FORENSICS LAB",
+          title: "Dual-Input Forensic Inspection & Coercion NLP",
+          desc: "Deep-dives into suspect audio recordings and extortion transcripts, identifying psychological coercion and digital arrest scripts.",
+          metric: "NLP COERCION: 89.0%"
+        },
+        {
+          indicator: "SCREEN 4 OF 6 · MEDIA AUTHENTICITY",
+          badge: "MEDIA AUTHENTICITY",
+          title: "Multi-Layer Deepfake & Audio Splice Verification",
+          desc: "Detects generative TTS synthesis, GAN voice conversion artifacts, and cut-and-paste temporal splice discontinuities.",
+          metric: "FINGERPRINT: GAN/TTS"
+        },
+        {
+          indicator: "SCREEN 5 OF 6 · BANKING WIRE GATE",
+          badge: "BANKING WIRE GATE",
+          title: "Pre-Action Wire Transfer Interceptor (SDK)",
+          desc: "Automatically quarantines high-value financial transfers (₹5L+ threshold) before ledger commit when voice risk is flagged.",
+          metric: "STATUS: QUARANTINED"
+        },
+        {
+          indicator: "SCREEN 6 OF 6 · BLOCKCHAIN EVIDENCE LEDGER",
+          badge: "EVIDENCE LEDGER",
+          title: "Court-Admissible BSA Section 65B Blockchain Ledger",
+          desc: "Anchors cryptographically signed forensic certificates to an immutable block ledger, ready for legal and judicial proceedings.",
+          metric: "CHAIN: SECURE_VERIFIED"
+        }
+      ];
+
+      function updateHUD(idx) {
+        const d = sceneData[idx];
+        document.getElementById("top-indicator").textContent = d.indicator;
+        document.getElementById("hud-badge").textContent = d.badge;
+        document.getElementById("hud-title").textContent = d.title;
+        document.getElementById("hud-desc").textContent = d.desc;
+        document.getElementById("hud-metric").textContent = d.metric;
+      }
+
+      // 60-Second Master Timeline
+      // Progress Bar Animation
+      tl.to("#hud-progress", { width: "100%", duration: 60, ease: "none" }, 0);
+
+      // SCENE 1: Dashboard (0.0s - 10.0s)
+      tl.call(() => updateHUD(0), null, 0);
+      tl.to("#scene-dashboard", { opacity: 1, duration: 0.6, ease: "power2.out" }, 0);
+      tl.fromTo("#rig-dashboard", { scale: 1, x: 0, y: 0 }, { scale: 1.18, x: -120, y: -60, duration: 4.5, ease: "power1.inOut" }, 3.0);
+      tl.to("#callout-d1", { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 1.5);
+      tl.to("#callout-d2", { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 3.5);
+      tl.to("#callout-d3", { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 5.5);
+      tl.to(["#callout-d1", "#callout-d2", "#callout-d3"], { opacity: 0, duration: 0.4 }, 9.2);
+      tl.to("#scene-dashboard", { opacity: 0, duration: 0.6, ease: "power2.in" }, 9.4);
+
+      // SCENE 2: Live Call Sentinel (10.0s - 20.0s)
+      tl.call(() => updateHUD(1), null, 10.0);
+      tl.to("#scene-live-call", { opacity: 1, duration: 0.6, ease: "power2.out" }, 10.0);
+      tl.fromTo("#rig-live-call", { scale: 1, x: 0, y: 0 }, { scale: 1.18, x: -140, y: -70, duration: 4.5, ease: "power1.inOut" }, 13.0);
+      tl.to("#callout-lc1", { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 11.2);
+      tl.to("#callout-lc2", { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 13.5);
+      tl.to("#callout-lc3", { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 15.5);
+      tl.to(["#callout-lc1", "#callout-lc2", "#callout-lc3"], { opacity: 0, duration: 0.4 }, 19.2);
+      tl.to("#scene-live-call", { opacity: 0, duration: 0.6, ease: "power2.in" }, 19.4);
+
+      // SCENE 3: Analyze Page (20.0s - 30.0s)
+      tl.call(() => updateHUD(2), null, 20.0);
+      tl.to("#scene-analyze", { opacity: 1, duration: 0.6, ease: "power2.out" }, 20.0);
+      tl.fromTo("#rig-analyze", { scale: 1, x: 0, y: 0 }, { scale: 1.18, x: 0, y: -50, duration: 4.5, ease: "power1.inOut" }, 23.0);
+      tl.to("#callout-an1", { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 21.2);
+      tl.to("#callout-an2", { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 23.5);
+      tl.to("#callout-an3", { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 25.5);
+      tl.to(["#callout-an1", "#callout-an2", "#callout-an3"], { opacity: 0, duration: 0.4 }, 29.2);
+      tl.to("#scene-analyze", { opacity: 0, duration: 0.6, ease: "power2.in" }, 29.4);
+
+      // SCENE 4: Media Authenticity (30.0s - 40.0s)
+      tl.call(() => updateHUD(3), null, 30.0);
+      tl.to("#scene-media-auth", { opacity: 1, duration: 0.6, ease: "power2.out" }, 30.0);
+      tl.fromTo("#rig-media-auth", { scale: 1, x: 0, y: 0 }, { scale: 1.18, x: 0, y: -50, duration: 4.5, ease: "power1.inOut" }, 33.0);
+      tl.to("#callout-ma1", { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 31.2);
+      tl.to("#callout-ma2", { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 33.5);
+      tl.to("#callout-ma3", { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 35.5);
+      tl.to(["#callout-ma1", "#callout-ma2", "#callout-ma3"], { opacity: 0, duration: 0.4 }, 39.2);
+      tl.to("#scene-media-auth", { opacity: 0, duration: 0.6, ease: "power2.in" }, 39.4);
+
+      // SCENE 5: Core Banking Wire Gate (40.0s - 50.0s)
+      tl.call(() => updateHUD(4), null, 40.0);
+      tl.to("#scene-sdk-docs", { opacity: 1, duration: 0.6, ease: "power2.out" }, 40.0);
+      tl.fromTo("#rig-sdk-docs", { scale: 1, x: 0, y: 0 }, { scale: 1.18, x: 0, y: -60, duration: 4.5, ease: "power1.inOut" }, 43.0);
+      tl.to("#callout-sdk1", { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 41.2);
+      tl.to("#callout-sdk2", { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 43.5);
+      tl.to("#callout-sdk3", { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 45.5);
+      tl.to(["#callout-sdk1", "#callout-sdk2", "#callout-sdk3"], { opacity: 0, duration: 0.4 }, 49.2);
+      tl.to("#scene-sdk-docs", { opacity: 0, duration: 0.6, ease: "power2.in" }, 49.4);
+
+      // SCENE 6: Blockchain Evidence Ledger (50.0s - 60.0s)
+      tl.call(() => updateHUD(5), null, 50.0);
+      tl.to("#scene-blockchain", { opacity: 1, duration: 0.6, ease: "power2.out" }, 50.0);
+      tl.fromTo("#rig-blockchain", { scale: 1, x: 0, y: 0 }, { scale: 1.18, x: -50, y: -50, duration: 4.5, ease: "power1.inOut" }, 53.0);
+      tl.to("#callout-bc1", { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 51.2);
+      tl.to("#callout-bc2", { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 53.5);
+      tl.to("#callout-bc3", { opacity: 1, y: 0, scale: 1, duration: 0.5, ease: "back.out(1.4)" }, 55.5);
+      tl.to("#scene-blockchain", { opacity: 1, duration: 0.1 }, 60.0);
+    </script>
+  </body>
+</html>

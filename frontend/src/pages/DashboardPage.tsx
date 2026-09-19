@@ -58,6 +58,70 @@ export function DashboardPage() {
         <StatCard label={t("dash.stat.numbers")} value={a.stats.reported_numbers} />
       </div>
 
+      {/* Video Walkthrough Showcase */}
+      <div className="card" style={{ marginTop: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+          <div>
+            <div className="chart-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span>🎬</span>
+              <span>Platform Video Walkthroughs</span>
+              <span style={{ background: "rgba(56, 189, 248, 0.15)", color: "#38bdf8", border: "1px solid #38bdf8", fontSize: "0.75rem", padding: "2px 8px", borderRadius: 4, fontWeight: 700 }}>
+                Real UI Tour
+              </span>
+            </div>
+            <div className="chart-sub">
+              Watch the quick 18s intro overview or explore the complete 60s screen-by-screen walkthrough explaining how DigiRaksha protects against AI voice clones and digital arrest fraud.
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-2" style={{ gap: 16 }}>
+          {/* Intro Video */}
+          <div style={{ background: "rgba(15, 23, 42, 0.6)", borderRadius: 10, padding: 14, border: "1px solid var(--border)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <strong style={{ color: "var(--text-1)", fontSize: "0.95rem" }}>Platform Intro (18s)</strong>
+              <span style={{ fontSize: "0.75rem", color: "#38bdf8", background: "rgba(56, 189, 248, 0.15)", padding: "2px 8px", borderRadius: 4, fontWeight: 600 }}>
+                QUICK OVERVIEW
+              </span>
+            </div>
+            <video
+              controls
+              poster="/videos/digiraksha_intro.jpg"
+              preload="metadata"
+              style={{ width: "100%", borderRadius: 8, background: "#050914", aspectRatio: "16/9", objectFit: "cover" }}
+            >
+              <source src="/videos/digiraksha_intro.mp4" type="video/mp4" />
+              Your browser does not support HTML5 video.
+            </video>
+            <p style={{ fontSize: "0.82rem", color: "var(--text-3)", marginTop: 8, lineHeight: 1.4 }}>
+              High-impact overview: &lt;30ms VoIP interception, Dhwani XLS-R foundation model, pre-action wire quarantine, and court-admissible BSA Section 65B certification.
+            </p>
+          </div>
+
+          {/* Full Walkthrough Video */}
+          <div style={{ background: "rgba(15, 23, 42, 0.6)", borderRadius: 10, padding: 14, border: "1px solid var(--border)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+              <strong style={{ color: "var(--text-1)", fontSize: "0.95rem" }}>Complete Application Walkthrough (60s)</strong>
+              <span style={{ fontSize: "0.75rem", color: "#10b981", background: "rgba(16, 185, 129, 0.15)", padding: "2px 8px", borderRadius: 4, fontWeight: 600 }}>
+                FULL REAL UI TOUR
+              </span>
+            </div>
+            <video
+              controls
+              poster="/videos/digiraksha_walkthrough.jpg"
+              preload="metadata"
+              style={{ width: "100%", borderRadius: 8, background: "#050914", aspectRatio: "16/9", objectFit: "cover" }}
+            >
+              <source src="/videos/digiraksha_walkthrough.mp4" type="video/mp4" />
+              Your browser does not support HTML5 video.
+            </video>
+            <p style={{ fontSize: "0.82rem", color: "var(--text-3)", marginTop: 8, lineHeight: 1.4 }}>
+              Screen-by-screen tour of all 6 live modules: Command Dashboard, Live Call Sentinel HUD, Audio Forensics Lab, Media Authenticity, Banking SDK, and Blockchain Ledger.
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Charts row */}
       <div className="grid grid-2" style={{ marginTop: 16 }}>
         <div className="card">

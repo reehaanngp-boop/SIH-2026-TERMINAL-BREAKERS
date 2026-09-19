@@ -1,0 +1,589 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080, initial-scale=1.0" />
+    <title>DigiRaksha · Platform Intro Video</title>
+    <script src="assets/gsap.min.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: #030712;
+        color: #f8fafc;
+        font-family: "Inter", -apple-system, sans-serif;
+        overflow: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+      #root {
+        width: 1920px;
+        height: 1080px;
+        position: relative;
+        overflow: hidden;
+        background: #030712;
+      }
+
+      /* Persistent Top Cyber HUD */
+      .top-hud {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1920px;
+        height: 64px;
+        background: rgba(3, 7, 18, 0.96);
+        backdrop-filter: blur(16px);
+        border-bottom: 1px solid rgba(56, 189, 248, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 36px;
+        z-index: 200;
+      }
+      .top-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .shield-icon {
+        width: 32px;
+        height: 32px;
+        background: linear-gradient(135deg, #0284c7, #2563eb);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 16px rgba(56, 189, 248, 0.4);
+      }
+      .brand-title {
+        font-size: 18px;
+        font-weight: 800;
+        color: #ffffff;
+        letter-spacing: -0.01em;
+      }
+      .brand-sub {
+        font-size: 12px;
+        font-weight: 700;
+        color: #e0f2fe;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .live-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 9999px;
+        background: rgba(16, 185, 129, 0.15);
+        border: 1px solid #10b981;
+        font-size: 11px;
+        font-weight: 700;
+        color: #6ee7b7;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .live-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #10b981;
+        box-shadow: 0 0 8px #10b981;
+      }
+
+      .top-center {
+        display: flex;
+        align-items: center;
+      }
+      .screen-indicator {
+        padding: 6px 18px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid rgba(56, 189, 248, 0.4);
+        border-radius: 9999px;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        color: #38bdf8;
+        letter-spacing: 0.04em;
+        box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+      }
+
+      .top-right {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+      .cert-tag {
+        font-size: 12px;
+        font-weight: 700;
+        padding: 4px 10px;
+        background: rgba(99, 102, 241, 0.15);
+        border: 1px solid #818cf8;
+        border-radius: 6px;
+        color: #c7d2fe;
+      }
+
+      /* Screens Container */
+      .screens-container {
+        position: absolute;
+        top: 64px;
+        left: 0;
+        width: 1920px;
+        height: 1016px;
+        overflow: hidden;
+      }
+
+      .scene-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1920px;
+        height: 1016px;
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .camera-rig {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1920px;
+        height: 1016px;
+        transform-origin: center center;
+        will-change: transform;
+      }
+
+      .real-ui-img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1920px;
+        height: 1016px;
+        object-fit: cover;
+        object-position: top center;
+        filter: contrast(1.03) brightness(1.02);
+      }
+
+      /* Scene 1 Hero Elements */
+      .hero-center {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -55%);
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        z-index: 50;
+      }
+      .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 24px;
+        border-radius: 9999px;
+        background: rgba(56, 189, 248, 0.12);
+        border: 1px solid #38bdf8;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 13px;
+        font-weight: 700;
+        color: #38bdf8;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .hero-title {
+        font-size: 64px;
+        font-weight: 900;
+        color: #ffffff;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+        text-shadow: 0 0 40px rgba(56, 189, 248, 0.4);
+      }
+      .hero-title span {
+        background: linear-gradient(135deg, #38bdf8, #818cf8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .hero-sub {
+        font-size: 22px;
+        font-weight: 500;
+        color: #cbd5e1;
+        max-width: 800px;
+        line-height: 1.5;
+      }
+      .hero-pills {
+        display: flex;
+        gap: 16px;
+        margin-top: 12px;
+      }
+      .hero-pill {
+        padding: 10px 20px;
+        background: rgba(15, 23, 42, 0.85);
+        border: 1px solid rgba(56, 189, 248, 0.3);
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #f8fafc;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* Spotlight & Feature Callouts */
+      .spotlight-card {
+        position: absolute;
+        background: rgba(15, 23, 42, 0.96);
+        border: 2px solid #38bdf8;
+        border-radius: 12px;
+        padding: 14px 20px;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8), 0 0 24px rgba(56, 189, 248, 0.35);
+        backdrop-filter: blur(12px);
+        z-index: 50;
+        opacity: 0;
+        transform: translateY(12px) scale(0.95);
+      }
+      .spotlight-card.accent-red {
+        border-color: #f43f5e;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8), 0 0 24px rgba(244, 63, 94, 0.4);
+      }
+      .spotlight-card.accent-emerald {
+        border-color: #10b981;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.8), 0 0 24px rgba(16, 185, 129, 0.4);
+      }
+      .spotlight-badge {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        font-weight: 700;
+        color: #38bdf8;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-bottom: 4px;
+      }
+      .spotlight-card.accent-red .spotlight-badge { color: #fda4af; }
+      .spotlight-card.accent-emerald .spotlight-badge { color: #6ee7b7; }
+      .spotlight-title {
+        font-size: 16px;
+        font-weight: 800;
+        color: #ffffff;
+        margin-bottom: 4px;
+      }
+      .spotlight-desc {
+        font-size: 13px;
+        font-weight: 500;
+        color: #cbd5e1;
+        line-height: 1.4;
+      }
+
+      /* Callout Positions */
+      .sc-intro-dial { top: 220px; right: 80px; width: 400px; }
+      .sc-intro-wave { top: 440px; left: 360px; width: 460px; }
+      .sc-intro-gate { top: 200px; left: 340px; width: 460px; }
+      .sc-intro-hold { bottom: 180px; right: 80px; width: 400px; }
+      .sc-intro-cert { top: 220px; left: 340px; width: 480px; }
+      .sc-intro-block { bottom: 180px; left: 340px; width: 480px; }
+
+      /* Persistent Lower-Third Narration HUD */
+      .lower-hud {
+        position: absolute;
+        bottom: 24px;
+        left: 40px;
+        right: 40px;
+        height: 104px;
+        background: rgba(3, 7, 18, 0.96);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(56, 189, 248, 0.35);
+        border-radius: 16px;
+        padding: 14px 36px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 200;
+        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.85);
+      }
+      .hud-content {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .hud-header-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .hud-badge {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        font-weight: 700;
+        color: #38bdf8;
+        background: rgba(56, 189, 248, 0.15);
+        border: 1px solid #38bdf8;
+        border-radius: 6px;
+        padding: 3px 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .hud-title {
+        font-size: 20px;
+        font-weight: 800;
+        color: #ffffff;
+        letter-spacing: -0.01em;
+      }
+      .hud-desc {
+        font-size: 14px;
+        font-weight: 500;
+        color: #cbd5e1;
+        line-height: 1.4;
+      }
+
+      .hud-right {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 8px;
+      }
+      .hud-metric-pill {
+        padding: 6px 14px;
+        background: rgba(15, 23, 42, 0.9);
+        border: 1px solid #10b981;
+        border-radius: 9999px;
+        font-size: 12px;
+        font-weight: 700;
+        color: #6ee7b7;
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      /* Progress Bar along bottom of Lower HUD */
+      .hud-progress-track {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: rgba(56, 189, 248, 0.15);
+        border-bottom-left-radius: 16px;
+        border-bottom-right-radius: 16px;
+        overflow: hidden;
+      }
+      .hud-progress-fill {
+        height: 100%;
+        width: 0%;
+        background: linear-gradient(90deg, #38bdf8, #818cf8, #10b981);
+        box-shadow: 0 0 12px #38bdf8;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="intro" data-width="1920" data-height="1080">
+      <!-- 18s Beat-Synced Audio Soundtrack -->
+      <audio id="soundtrack" src="assets/music/soundtrack.mp3" data-start="0" data-duration="18" preload="auto"></audio>
+
+      <!-- Persistent Top Cyber HUD -->
+      <header class="top-hud">
+        <div class="top-left">
+          <div class="shield-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div>
+            <div class="brand-title">DigiRaksha</div>
+            <div class="brand-sub">Platform Overview</div>
+          </div>
+          <div class="live-pill">
+            <div class="live-dot"></div>
+            <span>LIVE SENTINEL</span>
+          </div>
+        </div>
+
+        <div class="top-center">
+          <div class="screen-indicator" id="top-indicator">PLATFORM INTRO · AI SCAM SHIELD</div>
+        </div>
+
+        <div class="top-right">
+          <div class="cert-tag">BSA SEC 65B COMPLIANT</div>
+        </div>
+      </header>
+
+      <!-- Screens Container -->
+      <main class="screens-container">
+        <!-- SCENE 1: Mission Command -->
+        <section class="scene-layer" id="scene-intro-hero">
+          <div class="hero-center">
+            <div class="hero-badge">SIH PROBLEM STATEMENT 26104</div>
+            <h1 class="hero-title">Defending India Against<br /><span>AI Voice Cloning & Digital Arrest</span></h1>
+            <p class="hero-sub">Real-time sub-30ms interception on live VoIP streams, neural vocoder deepfake detection, and court-admissible blockchain evidence.</p>
+            <div class="hero-pills">
+              <div class="hero-pill">⚡ &lt;30ms Latency</div>
+              <div class="hero-pill">🧠 Dhwani XLS-R Foundation Model</div>
+              <div class="hero-pill">🔒 Pre-Action Wire Hold</div>
+              <div class="hero-pill">📜 BSA Sec 65B Certified</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- SCENE 2: Live VoIP Threat Detection -->
+        <section class="scene-layer" id="scene-intro-live">
+          <div class="camera-rig" id="rig-intro-live" data-layout-allow-overflow>
+            <img class="real-ui-img" src="assets/screens/real_ui_live_call.png" alt="DigiRaksha Real Live Call UI" />
+          </div>
+
+          <div class="spotlight-card accent-red sc-intro-dial" id="callout-il1">
+            <div class="spotlight-badge">AI CLONE RISK SURGE</div>
+            <div class="spotlight-title">Critical Impersonation: 94%</div>
+            <div class="spotlight-desc">Vocoder cutoff @ 7.8 kHz · Synthetic vocal fold micro-jitter</div>
+          </div>
+
+          <div class="spotlight-card sc-intro-wave" id="callout-il2">
+            <div class="spotlight-badge">LIVE WEBRTC OSCILLOSCOPE</div>
+            <div class="spotlight-title">Sub-Band Spectral Analysis</div>
+            <div class="spotlight-desc">Continuous 16.0 kHz PCM16 stream scanning in real time</div>
+          </div>
+        </section>
+
+        <!-- SCENE 3: Pre-Action Financial Quarantine -->
+        <section class="scene-layer" id="scene-intro-bank">
+          <div class="camera-rig" id="rig-intro-bank" data-layout-allow-overflow>
+            <img class="real-ui-img" src="assets/screens/real_ui_sdk_docs.png" alt="DigiRaksha Real SDK Docs UI" />
+          </div>
+
+          <div class="spotlight-card sc-intro-gate" id="callout-ib1">
+            <div class="spotlight-badge">CORE BANKING INTEGRATION</div>
+            <div class="spotlight-title">Pre-Action Wire Interceptor</div>
+            <div class="spotlight-desc">Direct hooks for Finacle, TCS BaNCS & SWIFT authorization</div>
+          </div>
+
+          <div class="spotlight-card accent-red sc-intro-hold" id="callout-ib2">
+            <div class="spotlight-badge">AUTOMATED QUARANTINE</div>
+            <div class="spotlight-title">₹25,00,000 Wire Transfer Held</div>
+            <div class="spotlight-desc">Blocked prior to ledger commit upon voice clone detection</div>
+          </div>
+        </section>
+
+        <!-- SCENE 4: Blockchain Evidence Ledger & Outro -->
+        <section class="scene-layer" id="scene-intro-bc">
+          <div class="camera-rig" id="rig-intro-bc" data-layout-allow-overflow>
+            <img class="real-ui-img" src="assets/screens/real_ui_blockchain.png" alt="DigiRaksha Real Blockchain UI" />
+          </div>
+
+          <div class="spotlight-card accent-emerald sc-intro-cert" id="callout-ic1">
+            <div class="spotlight-badge">LEGAL EVIDENCE VAULT</div>
+            <div class="spotlight-title">Court-Admissible BSA Sec 65B Certificate</div>
+            <div class="spotlight-desc">Cryptographically signed SHA-256 Merkle chain of custody</div>
+          </div>
+
+          <div class="spotlight-card sc-intro-block" id="callout-ic2">
+            <div class="spotlight-badge">IMMUTABLE LEDGER</div>
+            <div class="spotlight-title">SECURE_VERIFIED Chain Integrity</div>
+            <div class="spotlight-desc">47 blocks anchored · Protecting citizens across India</div>
+          </div>
+        </section>
+      </main>
+
+      <!-- Persistent Lower-Third Narration HUD -->
+      <footer class="lower-hud">
+        <div class="hud-content">
+          <div class="hud-header-row">
+            <div class="hud-badge" id="hud-badge">PLATFORM INTRO</div>
+            <div class="hud-title" id="hud-title">DigiRaksha · Next-Gen AI Telephony Defense</div>
+          </div>
+          <div class="hud-desc" id="hud-desc">
+            Real-time deepfake voice clone neutralization, pre-action banking interception, and BSA Section 65B blockchain certification.
+          </div>
+        </div>
+
+        <div class="hud-right">
+          <div class="hud-metric-pill" id="hud-metric">DEFENSE: ACTIVE</div>
+        </div>
+
+        <!-- Timeline Progress Fill -->
+        <div class="hud-progress-track">
+          <div class="hud-progress-fill" id="hud-progress"></div>
+        </div>
+      </footer>
+    </div>
+
+    <!-- GSAP Master Animation Choreography -->
+    <script>
+      const tl = gsap.timeline();
+      window.__timelines = window.__timelines || {};
+      window.__timelines["intro"] = tl;
+
+      const introData = [
+        {
+          indicator: "MISSION · PROBLEM STATEMENT 26104",
+          badge: "MISSION OVERVIEW",
+          title: "DigiRaksha · AI Voice Clone & Scam Shield",
+          desc: "Protecting citizens and enterprises from digital arrest extortion and CXO voice cloning attacks in real time.",
+          metric: "LATENCY: <30ms"
+        },
+        {
+          indicator: "LIVE CALL SENTINEL · TELEPHONY HUD",
+          badge: "LIVE INTERCEPTION",
+          title: "Sub-30ms Voice Impersonation Detection",
+          desc: "Dhwani XLS-R 300M model analyzes live vocal harmonics, identifying 7.5 kHz neural vocoder cutoffs on active calls.",
+          metric: "RISK: 94% CRITICAL"
+        },
+        {
+          indicator: "BANKING WIRE GATE · PRE-ACTION HOLD",
+          badge: "FINANCIAL INTERCEPTION",
+          title: "Pre-Action Wire Transfer Interceptor",
+          desc: "Automatically quarantines high-value financial transfers (₹5L+ threshold) before ledger commit when voice risk is flagged.",
+          metric: "STATUS: QUARANTINED"
+        },
+        {
+          indicator: "BLOCKCHAIN EVIDENCE · BSA SEC 65B",
+          badge: "LEGAL EVIDENCE",
+          title: "Court-Admissible BSA Section 65B Certification",
+          desc: "Anchors cryptographically signed SHA-256 Merkle proofs to an immutable block ledger for judicial prosecution.",
+          metric: "CHAIN: SECURE_VERIFIED"
+        }
+      ];
+
+      function updateHUD(idx) {
+        const d = introData[idx];
+        document.getElementById("top-indicator").textContent = d.indicator;
+        document.getElementById("hud-badge").textContent = d.badge;
+        document.getElementById("hud-title").textContent = d.title;
+        document.getElementById("hud-desc").textContent = d.desc;
+        document.getElementById("hud-metric").textContent = d.metric;
+      }
+
+      // 18-Second Master Timeline
+      tl.to("#hud-progress", { width: "100%", duration: 18, ease: "none" }, 0);
+
+      // SCENE 1: Mission Hero (0.0s - 4.5s)
+      tl.call(() => updateHUD(0), null, 0);
+      tl.to("#scene-intro-hero", { opacity: 1, duration: 0.6, ease: "power2.out" }, 0);
+      tl.from(".hero-title", { y: 20, opacity: 0, duration: 0.8, ease: "power3.out" }, 0.2);
+      tl.from(".hero-sub", { y: 15, opacity: 0, duration: 0.6, ease: "power3.out" }, 0.6);
+      tl.from(".hero-pill", { scale: 0.9, opacity: 0, stagger: 0.1, duration: 0.5, ease: "back.out(1.4)" }, 0.9);
+      tl.to("#scene-intro-hero", { opacity: 0, duration: 0.5, ease: "power2.in" }, 4.0);
+
+      // SCENE 2: Live Call Threat Detection (4.5s - 9.0s)
+      tl.call(() => updateHUD(1), null, 4.5);
+      tl.to("#scene-intro-live", { opacity: 1, duration: 0.5, ease: "power2.out" }, 4.5);
+      tl.fromTo("#rig-intro-live", { scale: 1, x: 0, y: 0 }, { scale: 1.22, x: -140, y: -70, duration: 3.8, ease: "power1.inOut" }, 4.8);
+      tl.to("#callout-il1", { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "back.out(1.4)" }, 5.2);
+      tl.to("#callout-il2", { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "back.out(1.4)" }, 6.2);
+      tl.to(["#callout-il1", "#callout-il2"], { opacity: 0, duration: 0.3 }, 8.6);
+      tl.to("#scene-intro-live", { opacity: 0, duration: 0.5, ease: "power2.in" }, 8.7);
+
+      // SCENE 3: Pre-Action Financial Wire Gate (9.0s - 13.5s)
+      tl.call(() => updateHUD(2), null, 9.0);
+      tl.to("#scene-intro-bank", { opacity: 1, duration: 0.5, ease: "power2.out" }, 9.0);
+      tl.fromTo("#rig-intro-bank", { scale: 1, x: 0, y: 0 }, { scale: 1.22, x: 0, y: -60, duration: 3.8, ease: "power1.inOut" }, 9.3);
+      tl.to("#callout-ib1", { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "back.out(1.4)" }, 9.7);
+      tl.to("#callout-ib2", { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "back.out(1.4)" }, 10.7);
+      tl.to(["#callout-ib1", "#callout-ib2"], { opacity: 0, duration: 0.3 }, 13.1);
+      tl.to("#scene-intro-bank", { opacity: 0, duration: 0.5, ease: "power2.in" }, 13.2);
+
+      // SCENE 4: Blockchain Evidence & Outro (13.5s - 18.0s)
+      tl.call(() => updateHUD(3), null, 13.5);
+      tl.to("#scene-intro-bc", { opacity: 1, duration: 0.5, ease: "power2.out" }, 13.5);
+      tl.fromTo("#rig-intro-bc", { scale: 1, x: 0, y: 0 }, { scale: 1.2, x: -50, y: -50, duration: 3.8, ease: "power1.inOut" }, 13.8);
+      tl.to("#callout-ic1", { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "back.out(1.4)" }, 14.2);
+      tl.to("#callout-ic2", { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "back.out(1.4)" }, 15.2);
+      tl.to("#scene-intro-bc", { opacity: 1, duration: 0.1 }, 18.0);
+    </script>
+  </body>
+</html>
