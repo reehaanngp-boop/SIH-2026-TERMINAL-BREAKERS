@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { api, onAuthError, setAuthToken } from "./api";
+import { api, getApiBase, onAuthError, setApiBase, setAuthToken } from "./api";
 import { LoginScreen } from "./components/LoginScreen";
 import { Sidebar } from "./components/Sidebar";
 import { ToastStack, useToasts } from "./components/Toast";
@@ -72,6 +72,24 @@ export default function App() {
     navigate("/dashboard");
   };
 
+  const [offlineBackendUrl, setOfflineBackendUrl] = useState(() => getApiBase() || "");
+  const [offlineTesting, setOfflineTesting] = useState(false);
+
+  const handleOfflineConnect = async () => {
+    setOfflineTesting(true);
+    setApiBase(offlineBackendUrl);
+    try {
+      const s = await api.authStatus();
+      setOfficerName(s.officer_name ?? null);
+      if (s.authenticated) setAuth("app");
+      else setAuth(s.setup_required ? "setup" : "login");
+    } catch {
+      push("Could not connect to backend at that URL. Ensure the server or tunnel is running.", "error");
+    } finally {
+      setOfflineTesting(false);
+    }
+  };
+
   if (auth === "loading") {
     return (
       <div className="center" style={{ minHeight: "100vh" }}>
@@ -84,15 +102,41 @@ export default function App() {
   if (auth === "offline") {
     return (
       <div className="auth-wrap">
-        <div className="auth-card">
+        <div className="auth-card" style={{ maxWidth: 440 }}>
           <div className="auth-logo">
             <div className="sidebar-logo">🛡️</div>
             <div className="auth-title">DigiRaksha</div>
           </div>
           <div className="error-banner">{t("err.network")}</div>
-          <button className="btn btn-primary btn-block" onClick={() => window.location.reload()}>
-            {t("err.try")}
-          </button>
+          <p className="muted small" style={{ marginTop: 10, marginBottom: 12 }}>
+            Connect to your active backend (Cloudflare Tunnel or Localhost):
+          </p>
+          <input
+            className="input"
+            type="text"
+            placeholder="https://xxxx.trycloudflare.com or http://127.0.0.1:8000"
+            value={offlineBackendUrl}
+            onChange={(e) => setOfflineBackendUrl(e.target.value)}
+            style={{ marginBottom: 12 }}
+          />
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ flex: 1 }}
+              disabled={offlineTesting}
+              onClick={handleOfflineConnect}
+            >
+              {offlineTesting ? "Connecting…" : "Connect & Start"}
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={() => window.location.reload()}
+            >
+              {t("err.try")}
+            </button>
+          </div>
         </div>
       </div>
     );
