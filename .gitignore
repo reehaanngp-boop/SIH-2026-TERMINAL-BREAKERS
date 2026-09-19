@@ -50,9 +50,11 @@ data/models/whisper-*/
 .DS_Store
 Thumbs.db
 
-# PyInstaller build output
+# PyInstaller build output & archives
 build/
 dist/
+*.exe
+*.zip
 
 # IDE
 .vscode/

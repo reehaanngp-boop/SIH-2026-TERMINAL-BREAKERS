@@ -128,9 +128,9 @@ export function PhoneIntelPage() {
             <table className="data">
               <thead>
                 <tr>
-                  <th>{t("phone.lookup")}</th>
-                  <th>{t("evidence.filter.risk")}</th>
-                  <th>Count</th>
+                  <th>{t("field.phone_num")}</th>
+                  <th>{t("field.status")}</th>
+                  <th>{t("field.count")}</th>
                   <th>{t("evidence.date")}</th>
                   <th>{t("phone.linked.cases")}</th>
                   <th></th>

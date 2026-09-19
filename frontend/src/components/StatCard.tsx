@@ -1,22 +1,23 @@
 export function StatCard({
   label,
   value,
-  hint,
-  accent = false,
-  alert = false,
+  accent,
+  sub,
+  hint: _hint,
+  alert: _alert,
 }: {
   label: string;
-  value: string | number;
-  hint?: string;
+  value: number | string;
   accent?: boolean;
+  sub?: string;
+  hint?: string;
   alert?: boolean;
 }) {
-  const cls = `stat-value ${accent ? "stat-accent" : ""} ${alert ? "stat-alert" : ""}`;
   return (
-    <div className="stat">
+    <div className={`stat-card${accent ? " accent" : ""}`}>
       <div className="stat-label">{label}</div>
-      <div className={cls}>{value}</div>
-      {hint && <div className="stat-hint">{hint}</div>}
+      <div className="stat-value">{value}</div>
+      {sub && <div className="text-sm text-muted" style={{ marginTop: 4 }}>{sub}</div>}
     </div>
   );
 }

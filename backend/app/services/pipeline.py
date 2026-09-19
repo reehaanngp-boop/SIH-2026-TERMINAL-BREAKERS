@@ -26,7 +26,9 @@ class AnalysisPipeline:
         self.detectors = detectors or get_detectors()
 
     # ------------------------------------------------------------------ public
-    def analyze_transcript(self, text: str, language_hint: str | None = None) -> dict[str, Any]:
+    def analyze_transcript(
+        self, text: str, language_hint: str | None = None, skip_ai: bool = False
+    ) -> dict[str, Any]:
         scam = self.detectors.scam.classify(text)
         result = assess(
             media_type="text",
@@ -37,6 +39,9 @@ class AnalysisPipeline:
             transcript=text,
             language=language_hint,
         )
+        if skip_ai:
+            result["ai_analysis"] = None
+            return result
         return self._attach_ai(result, media_type="text")
 
     def analyze_media(
@@ -52,6 +57,8 @@ class AnalysisPipeline:
 
         media_type = "video" if media_type == "video" else "audio"
 
+        import concurrent.futures
+
         _p(0.15, "Decoding audio")
         audio = None
         asr_res = None
@@ -64,27 +71,45 @@ class AnalysisPipeline:
         else:
             audio = load_audio_16k(file_path)
 
-        _p(0.30, "Transcribing speech (Whisper)")
-        if audio is not None:
-            asr_res = self.detectors.asr.transcribe(str(audio.path))
+        _p(0.30, "Analysing audio & visual signals in parallel")
 
-        _p(0.55, "Analysing voice authenticity")
-        if audio is not None:
-            voice_res = self.detectors.voice.analyze(audio)
+        def _run_asr():
+            if audio is not None:
+                return self.detectors.asr.transcribe(str(audio.path))
+            return None
 
-        if media_type == "video":
-            _p(0.70, "Analysing video frames")
-            video_res = self.detectors.video.analyze(file_path)
+        def _run_voice():
+            if audio is not None:
+                return self.detectors.voice.analyze(audio)
+            return None
+
+        def _run_video():
+            if media_type == "video":
+                return self.detectors.video.analyze(file_path)
+            return None
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            fut_asr = executor.submit(_run_asr)
+            fut_voice = executor.submit(_run_voice)
+            fut_video = executor.submit(_run_video)
+
+            asr_res = fut_asr.result()
+            _p(0.60, "Speech transcribed")
+            voice_res = fut_voice.result()
+            _p(0.75, "Voice authenticity assessed")
+            video_res = fut_video.result()
+            if media_type == "video":
+                _p(0.85, "Video deepfake cues scanned")
 
         transcript = (asr_res or {}).get("transcript") or None
         language = (asr_res or {}).get("language") or None
 
         scam_res = None
         if transcript and transcript.strip():
-            _p(0.85, "Scanning for scam-script patterns")
+            _p(0.90, "Scanning for scam-script patterns")
             scam_res = self.detectors.scam.classify(transcript)
 
-        _p(0.95, "Aggregating risk")
+        _p(0.95, "Aggregating risk & consulting AI shield")
         result = assess(
             media_type=media_type,
             asr=asr_res,

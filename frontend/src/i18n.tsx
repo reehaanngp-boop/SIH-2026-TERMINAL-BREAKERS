@@ -7,9 +7,21 @@ export type Lang = "en" | "hi";
 type Entry = { en: string; hi: string };
 
 const DICT: Record<string, Entry> = {
+  "nav.dashboard": { en: "Dashboard", hi: "डैशबोर्ड" },
+  "nav.live-call": { en: "Live Call Sentinel", hi: "लाइव कॉल सेंटिनल" },
   "nav.analyze": { en: "Analyse", hi: "जाँच करें" },
+  "nav.assistant": { en: "AI Copilot", hi: "AI सहायक" },
+  "nav.cases": { en: "Cases", hi: "मामले" },
+  "nav.evidence": { en: "Evidence Vault", hi: "साक्ष्य तिजोरी" },
+  "nav.voice-match": { en: "Voice Match", hi: "आवाज़ मिलान" },
+  "nav.phone": { en: "Phone Intelligence", hi: "फ़ोन खुफिया" },
   "nav.registry": { en: "Safe-Voice Registry", hi: "सेफ-वॉइस रजिस्ट्री" },
+  "nav.blockchain": { en: "Evidence Ledger", hi: "साक्ष्य लेजर" },
+  "nav.sdk": { en: "API & Banking SDK", hi: "API एवं बैंकिंग SDK" },
+  "nav.sdk-docs": { en: "API & Banking SDK", hi: "API एवं बैंकिंग SDK" },
+  "nav.media-auth": { en: "Media Authenticity", hi: "मीडिया प्रामाणिकता" },
   "nav.history": { en: "History", hi: "इतिहास" },
+  "nav.settings": { en: "Settings", hi: "सेटिंग्स" },
   "nav.about": { en: "About", hi: "परिचय" },
   "brand.tagline": {
     en: "AI shield against Digital Arrest & deepfake scam calls",
@@ -144,13 +156,23 @@ const DICT: Record<string, Entry> = {
   "err.network": { en: "Network error — is the backend running?", hi: "नेटवर्क त्रुटि — क्या बैकएंड चालू है?" },
   "err.try": { en: "Try again", hi: "फिर से कोशिश करें" },
 
-  // ---- police suite navigation / shell ----------------------------------
-  "nav.dashboard": { en: "Dashboard", hi: "डैशबोर्ड" },
-  "nav.cases": { en: "Cases", hi: "मामले" },
-  "nav.evidence": { en: "Evidence Vault", hi: "साक्ष्य तिजोरी" },
-  "nav.voice-match": { en: "Voice Match", hi: "आवाज़ मिलान" },
-  "nav.phone": { en: "Phone Intelligence", hi: "फ़ोन खुफिया" },
-  "nav.settings": { en: "Settings", hi: "सेटिंग्स" },
+  // Live Call Sentinel & Telephony Security
+  "sentinel.ticker.online": { en: "CORE SENTINEL", hi: "मुख्य सेंटिनल" },
+  "sentinel.ticker.compliance": { en: "Section 65B Bharatiya Sakshya Adhiniyam Certified", hi: "धारा 65B भारतीय साक्ष्य अधिनियम प्रमाणित" },
+  "scenario.ceo.title": { en: "Executive Wire Fraud (Cloned Voice)", hi: "कार्यकारी वायर धोखाधड़ी (क्लोन आवाज)" },
+  "scenario.arrest.title": { en: "Digital Arrest Coercion (DCP Cyber)", hi: "डिजिटल अरेस्ट दबाव (DCP साइबर)" },
+  "scenario.genuine.title": { en: "Routine Briefing (Genuine CFO)", hi: "नियमित बातचीत (वास्तविक CFO)" },
+  "btn.run_sim": { en: "Run Telephony Attack Simulation", hi: "टेलीफ़ोनी हमला अनुकरण चलाएँ" },
+  "btn.stop_sim": { en: "End Call / Terminate", hi: "कॉल समाप्त करें" },
+  "btn.connect_mic": { en: "Connect Live Stream", hi: "लाइव स्ट्रीम कनेक्ट करें" },
+  "btn.stop_mic": { en: "Disconnect Call", hi: "कॉल डिस्कनेक्ट करें" },
+  "sentinel.action.title": { en: "Recommended Immediate Actions", hi: "अनुशंसित त्वरित कार्रवाई" },
+  "sentinel.action.halt": { en: "Halt All Financial Transactions", hi: "सभी वित्तीय लेनदेन तुरंत रोकें" },
+  "sentinel.action.hangup": { en: "Disconnect & Verify Out-of-Band", hi: "कॉल काटें और दूसरे माध्यम से पुष्टि करें" },
+  "sentinel.action.helpline": { en: "Report to 1930 Cyber Helpline", hi: "1930 साइबर हेल्पलाइन पर रिपोर्ट करें" },
+  "sentinel.threat.critical": { en: "CRITICAL IMPERSONATION THREAT", hi: "गंभीर पहचान प्रतिरूपण खतरा" },
+  "sentinel.threat.suspicious": { en: "BORDERLINE SUSPICIOUS SIGNAL", hi: "संदिग्ध संकेत" },
+  "sentinel.threat.genuine": { en: "GENUINE HUMAN CALLER", hi: "वास्तविक मानव कॉलर" },
   "auth.setup.title": { en: "Set up DigiRaksha", hi: "डिजीरक्षा सेट करें" },
   "auth.setup.sub": {
     en: "This station PC runs the case tools. Set an officer name and a 4+ digit PIN to lock the app.",
@@ -282,7 +304,47 @@ const DICT: Record<string, Entry> = {
   "role.witness": { en: "Witness", hi: "गवाह" },
   "role.informant": { en: "Informant", hi: "सूचना दाता" },
   "role.unknown": { en: "Unknown", hi: "अज्ञात" },
+
+  // AI Assistant & Copilot
+  "assistant.title": { en: "DigiRaksha AI Cyber Copilot", hi: "डिजीरक्षा AI साइबर सहायक" },
+  "assistant.subtitle": {
+    en: "Powered by OpenRouter LLM — 24/7 AI legal advisor, scam debunking, and 1930 complaint drafting assistant.",
+    hi: "OpenRouter LLM द्वारा संचालित — 24/7 AI कानूनी सलाहकार, स्कैम जांच और 1930 शिकायत ड्राफ्ट सहायक।",
+  },
+  "assistant.placeholder": {
+    en: "Ask about suspicious calls, verify legal sections, paste a message for triage, or request a complaint draft…",
+    hi: "संदिग्ध कॉल के बारे में पूछें, कानूनी धाराएँ जानें, संदेश की त्वरित जाँच करें, या शिकायत ड्राफ्ट मांगें…",
+  },
+  "assistant.send": { en: "Send", hi: "भेजें" },
+  "assistant.clear": { en: "Clear Chat", hi: "चैट साफ़ करें" },
+  "assistant.consult_scan": { en: "Consult AI Copilot", hi: "AI सहायक से पूछें" },
+  "assistant.draft_fir_btn": { en: "Draft Cyber Complaint / FIR", hi: "साइबर शिकायत / FIR ड्राफ्ट करें" },
+  "assistant.quick_triage_btn": { en: "Quick Message Triage", hi: "संदेश की त्वरित जाँच" },
+  "assistant.copied": { en: "Copied to clipboard!", hi: "क्लिपबोर्ड पर कॉपी हो गया!" },
+  "settings.openrouter_title": { en: "OpenRouter AI Configuration", hi: "OpenRouter AI सेटिंग्स" },
+  "settings.openrouter_desc": {
+    en: "Configure the OpenRouter API key and model powering DigiRaksha's AI Scam Analysis and Copilot.",
+    hi: "डिजीरक्षा के AI स्कैम विश्लेषण और सहायक को संचालित करने वाली OpenRouter API कुंजी और मॉडल सेट करें।",
+  },
+  "settings.openrouter_key": { en: "OpenRouter API Key", hi: "OpenRouter API कुंजी" },
+  "settings.openrouter_model": { en: "AI Model", hi: "AI मॉडल" },
+  "settings.test_key": { en: "Test Connection", hi: "कनेक्शन जांचें" },
+  "settings.key_valid": { en: "OpenRouter AI Connected Successfully!", hi: "OpenRouter AI सफलतापूर्वक कनेक्ट हो गया!" },
+  "settings.key_invalid": { en: "Connection Failed: Check API Key", hi: "कनेक्शन विफल: API कुंजी जांचें" },
+
+  // General fields & Media Auth
+  "case.priority": { en: "Priority", hi: "प्राथमिकता" },
+  "field.description": { en: "Description", hi: "विवरण" },
+  "field.count": { en: "Count", hi: "संख्या" },
+  "field.phone_num": { en: "Phone Number", hi: "फ़ोन नंबर" },
+  "field.status": { en: "Status", hi: "स्थिति" },
+  "media_auth.title": { en: "Media Authenticity Checker", hi: "मीडिया प्रामाणिकता परीक्षक" },
+  "media_auth.sub": {
+    en: "Detect AI voice cloning, audio manipulation, and deepfake content in uploaded audio or video files",
+    hi: "अपलोड की गई ऑडियो या वीडियो फ़ाइलों में AI आवाज़ क्लोनिंग, हेरफेर और डीपफेक सामग्री की पहचान करें",
+  },
 };
+
 
 interface I18n {
   lang: Lang;

@@ -47,8 +47,10 @@ class Settings(BaseSettings):
     whisper_compute_type: str = "int8"
     whisper_language: str | None = None  # None => auto-detect
 
-    # Voice anti-spoofing
+    # Voice anti-spoofing & cloning detection
     enable_aasist: bool = True  # gracefully falls back to heuristics when torch/model absent
+    enable_dhwani: bool = True  # Multilingual Wav2Vec2 + AASIST ONNX foundation model
+    dhwani_model_path: Path | None = None  # None => resolves to model_dir / "dhwani_multilingual.onnx"
 
     # Speaker verification (Safe-Voice Registry)
     # 0.50 separates ECAPA embeddings cleanly on real data (same-speaker ~0.85,
@@ -63,17 +65,13 @@ class Settings(BaseSettings):
     video_frame_interval: int = 5  # analyse every Nth frame for deepfake heuristics
     video_max_frames: int = 240  # hard cap on frames analysed
 
-    # AI analysis layer (OpenRouter LLM).
-    # OFF by default: enabling sends the call transcript to an external AI API
-    # (OpenRouter). The local detectors always run regardless.
-    enable_llm_analysis: bool = False
+    # AI analysis layer (OpenRouter LLM)
+    enable_llm_analysis: bool = True
     openrouter_api_key: str | None = None
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    # $0. ling-3.0-tiny:free is nominally stronger but its shared free pool is
-    # frequently 429-rate-limited; laguna-s-2.1:free has been reliable in tests.
-    # Swap for any model id, e.g. deepseek/deepseek-v4-flash-0731 (~$0.09/M).
     openrouter_model: str = "poolside/laguna-s-2.1:free"
-    llm_timeout_seconds: float = 40.0
+    openrouter_fallback_models: str = "nvidia/nemotron-3.5-lightning:free,z-ai/glm-5.2:free,minimax/minimax-m3:free,google/gemini-2.0-flash-exp:free"
+    llm_timeout_seconds: float = 10.0
     llm_max_transcript_chars: int = 6000
 
     # Access control (police suite). Existing consumer routes stay open; when

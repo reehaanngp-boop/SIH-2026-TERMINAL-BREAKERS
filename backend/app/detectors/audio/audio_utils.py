@@ -99,6 +99,11 @@ def load_audio_16k(path: str | Path, *, convert: bool = True) -> AudioData:
     if samples.ndim > 1:
         samples = samples.mean(axis=1)
     samples = np.ascontiguousarray(samples, dtype=np.float32)
+    max_val = float(np.max(np.abs(samples))) if len(samples) > 0 else 0.0
+    if 0.0 < max_val < 0.2:  # Normalize quiet recordings for reliable VAD & acoustic analysis
+        samples = samples * (0.8 / max_val)
+    elif max_val > 1.0:  # Prevent clipping distortion
+        samples = samples / max_val
     return AudioData(samples=samples, sr=int(sr), duration=float(len(samples) / sr), path=wav_path)
 
 

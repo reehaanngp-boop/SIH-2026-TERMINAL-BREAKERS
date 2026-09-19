@@ -1,0 +1,19 @@
+# Normalise line endings for text files
+* text=auto
+
+# Binary assets - never normalise (CRLF conversion would corrupt them)
+*.wav binary
+*.mp4 binary
+*.m4a binary
+*.pdf binary
+*.pth binary
+*.pt binary
+*.ckpt binary
+*.joblib binary
+*.h5 binary
+*.onnx binary
+*.bin binary
+*.db binary
+*.db-wal binary
+*.db-shm binary
+*.exe binary

@@ -1,62 +1,91 @@
 import { useRef, useState } from "react";
-import type { ReactNode } from "react";
+import { fmtBytes } from "../utils";
 
 export function FileDropzone({
-  accept,
   onFile,
-  busy = false,
-  help,
+  accept,
+  label,
+  sub,
+  busy,
   icon = "📁",
+  help,
 }: {
-  accept: string;
-  onFile: (f: File | null) => void;
+  onFile: (f: File) => void;
+  accept?: string;
+  label?: string;
+  sub?: string;
   busy?: boolean;
-  help?: ReactNode;
   icon?: string;
+  help?: string;
 }) {
-  const [drag, setDrag] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const input = useRef<HTMLInputElement>(null);
+  const ref = useRef<HTMLInputElement>(null);
+  const [over, setOver] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const pick = (f: File | null) => {
-    setFile(f);
-    onFile(f);
+  const handle = (file: File | undefined) => {
+    if (file) {
+      setSelectedFile(file);
+      onFile(file);
+    }
+  };
+
+  const clearFile = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedFile(null);
+    if (ref.current) ref.current.value = "";
   };
 
   return (
     <div>
       <div
-        className={`dropzone ${drag ? "drag" : ""}`}
-        onClick={() => !busy && input.current?.click()}
+        className={`dropzone${over ? " over" : ""}${busy ? " busy" : ""}`}
+        onClick={() => !busy && ref.current?.click()}
         onDragOver={(e) => {
           e.preventDefault();
-          setDrag(true);
+          if (!busy) setOver(true);
         }}
-        onDragLeave={() => setDrag(false)}
+        onDragLeave={() => setOver(false)}
         onDrop={(e) => {
           e.preventDefault();
-          setDrag(false);
-          pick(e.dataTransfer.files?.[0] ?? null);
+          setOver(false);
+          if (!busy) handle(e.dataTransfer.files[0]);
         }}
       >
+        <div className="dropzone-icon">{busy ? "⏳" : icon}</div>
+        <div className="dropzone-label">
+          {busy ? "Processing file..." : (label ?? "Drop a file or click to browse")}
+        </div>
+        <div className="dropzone-sub">
+          {sub ?? (accept ? accept.replace(/,/g, " ·") : "Any file type")}
+        </div>
+        {help && <div className="dropzone-help">{help}</div>}
         <input
-          ref={input}
+          ref={ref}
           type="file"
           accept={accept}
-          hidden
-          onChange={(e) => pick(e.target.files?.[0] ?? null)}
           disabled={busy}
+          style={{ display: "none" }}
+          onChange={(e) => handle(e.target.files?.[0])}
         />
-        <div className="dropzone-icon">{icon}</div>
-        <div className="dropzone-text">Drop a file here or click to browse</div>
-        {help && <div className="muted small">{help}</div>}
       </div>
-      {file && (
-        <div className="file-chip">
-          <b>{file.name}</b> · {(file.size / 1024 / 1024).toFixed(1)} MB
-          <button className="link" onClick={() => pick(null)} aria-label="Remove file">
-            ×
-          </button>
+
+      {selectedFile && (
+        <div className="dropzone-file-selected">
+          <span>📄</span>
+          <span className="dropzone-file-name" title={selectedFile.name}>
+            {selectedFile.name}
+          </span>
+          <span className="dropzone-file-size">({fmtBytes(selectedFile.size)})</span>
+          {!busy && (
+            <button
+              type="button"
+              className="dropzone-file-clear"
+              onClick={clearFile}
+              title="Remove file"
+            >
+              ✕
+            </button>
+          )}
         </div>
       )}
     </div>

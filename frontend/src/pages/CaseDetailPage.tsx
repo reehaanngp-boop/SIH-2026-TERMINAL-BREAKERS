@@ -138,7 +138,7 @@ export function CaseDetailPage({ id, navigate }: { id: string; navigate: (r: str
           <div className="muted small">{c.suspect_name ?? "—"}{c.suspect_phone ? ` · ${c.suspect_phone}` : ""}</div>
         </div>
         <div className="card">
-          <div className="card-title">Timeline</div>
+          <div className="card-title">{t("case.timeline")}</div>
           <div className="muted small">
             {t("case.officer")}: <b>{c.officer_name ?? "—"}</b>
             <br />Opened: {fmtDate(c.created_at)}
@@ -158,7 +158,7 @@ export function CaseDetailPage({ id, navigate }: { id: string; navigate: (r: str
 
       {c.description && (
         <div className="card">
-          <div className="card-title">Description</div>
+          <div className="card-title">{t("field.description")}</div>
           <p className="muted small" style={{ margin: 0 }}>{c.description}</p>
         </div>
       )}

@@ -5,6 +5,7 @@ import type {
   CaseCreatePayload,
   CaseDetail,
   CaseListItem,
+  DraftComplaintResponse,
   Evidence,
   EvidenceList,
   FamilyMember,
@@ -17,16 +18,24 @@ import type {
   PersonCreatePayload,
   PhoneLookup,
   PhoneRecord,
+  QuickCheckResponse,
   ScanListItem,
   VerifyResult,
   VoiceMatchResult,
   VoicePrintCreateResult,
 } from "./types";
 
-const API = "/api/v1";
+const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
+const API = `${API_BASE}/api/v1`;
 const TOKEN_KEY = "digiraksha.token";
+const OPENROUTER_KEY = "digiraksha.openrouter_key";
+
+export function getApiBase(): string {
+  return API_BASE;
+}
 
 let token: string | null = localStorage.getItem(TOKEN_KEY);
+let openrouterKey: string | null = localStorage.getItem(OPENROUTER_KEY);
 let onUnauthorized: (() => void) | null = null;
 
 export function getAuthToken(): string | null {
@@ -37,6 +46,16 @@ export function setAuthToken(t: string | null): void {
   token = t;
   if (t) localStorage.setItem(TOKEN_KEY, t);
   else localStorage.removeItem(TOKEN_KEY);
+}
+
+export function getOpenRouterKey(): string | null {
+  return openrouterKey;
+}
+
+export function setOpenRouterKey(k: string | null): void {
+  openrouterKey = k ? k.trim() : null;
+  if (openrouterKey) localStorage.setItem(OPENROUTER_KEY, openrouterKey);
+  else localStorage.removeItem(OPENROUTER_KEY);
 }
 
 /** Register a handler invoked when any request returns 401 (session expired). */
@@ -58,6 +77,7 @@ function parseError(res: Response, body: unknown): string {
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   if (token) headers.set("Authorization", `Bearer ${token}`);
+  if (openrouterKey) headers.set("x-openrouter-key", openrouterKey);
   if (init?.body && typeof init.body === "string" && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
@@ -311,5 +331,75 @@ export const api = {
   },
   exportScans(): Promise<Blob> {
     return download("/export/scans");
+  },
+
+  // -- AI assistant & cyber copilot ----------------------------------------
+  assistantStatus(): Promise<{ available: boolean; active_model: string; reason: string }> {
+    return request("/assistant/status");
+  },
+  assistantChat(
+    messages: { role: string; content: string }[],
+    scanId?: string,
+    caseId?: string,
+    model?: string,
+  ): Promise<{ status: string; model: string; reply: string; suggestions: string[]; error?: string | null }> {
+    return request("/assistant/chat", {
+      method: "POST",
+      body: JSON.stringify({
+        messages,
+        scan_id: scanId || null,
+        case_id: caseId || null,
+        model: model || null,
+      }),
+    });
+  },
+  assistantQuickCheck(text: string): Promise<QuickCheckResponse> {
+    return request("/assistant/quick-check", {
+      method: "POST",
+      body: JSON.stringify({ text }),
+    });
+  },
+  assistantDraftFir(data: Record<string, unknown>): Promise<DraftComplaintResponse> {
+    return request("/assistant/draft-fir", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  // -- Real-Time Live Stream & Telephony Simulator ---------------------------
+  simulateStream(scenario: string, claimedIdentity?: string, callerId?: string): Promise<any> {
+    return request("/stream/simulate", {
+      method: "POST",
+      body: JSON.stringify({ scenario, claimed_identity: claimedIdentity, caller_id: callerId }),
+    });
+  },
+  getScenarioAudioUrl(scenario: string): string {
+    return `/api/v1/stream/scenario-audio/${encodeURIComponent(scenario)}`;
+  },
+  getSampleFileUrl(filename: string): string {
+    return `/api/v1/stream/sample-file/${encodeURIComponent(filename)}`;
+  },
+
+  // -- Blockchain Audit Trail & Verification ----------------------------------
+  getBlockchainLedger(limit = 50): Promise<{ status: string; count: number; total_in_chain: number; blocks: any[] }> {
+    return request(`/blockchain/ledger?limit=${limit}`);
+  },
+  getBlockchainStats(): Promise<{
+    total_blocks: number;
+    total_verified_calls: number;
+    fraud_attacks_intercepted: number;
+    chain_integrity: string;
+    last_block_hash: string;
+    statutory_compliance: string;
+  }> {
+    return request("/blockchain/stats");
+  },
+  verifyBlockchainCertificate(certificateId: string): Promise<{
+    valid: boolean;
+    certificate_id: string;
+    status: string;
+    block: any;
+  }> {
+    return request(`/blockchain/verify/${encodeURIComponent(certificateId)}`);
   },
 };

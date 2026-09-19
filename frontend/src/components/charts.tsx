@@ -1,190 +1,161 @@
-import { niceCeil } from "../utils";
+/** Clean, simple SVG charts */
 
-/* ---------------------------------------------------------------------------
-   Inline-SVG charts (offline-safe, no chart lib). Colours validated with the
-   dataviz palette checker against the dark surface — see styles.css tokens.
-   - single series use the brand accent; categorical trios use --cat-1/2/3
-   - status series (risk) use --low/--medium/--high
-   Text wears ink tokens; marks carry identity. Hover = per-mark tooltips.
---------------------------------------------------------------------------- */
+interface DataPoint { label: string; value: number; color?: string; }
 
-export interface BarDatum {
-  label: string;
-  value: number;
-}
-
-/** Vertical single-series bar chart with per-mark hover tooltips. */
-export function BarChart({ data, unit }: { data: BarDatum[]; unit?: string }) {
-  const max = Math.max(1, ...data.map((d) => d.value));
+/* ---- Bar Chart ---- */
+export function BarChart({ data }: { data: DataPoint[] }) {
+  if (!data.length) return null;
+  const max = Math.max(...data.map((d) => d.value), 1);
   return (
-    <div className="chart">
-      <div className="bars">
-        {data.map((d) => {
-          const h = Math.round((d.value / max) * 100);
-          return (
-            <div className="bar-col" key={d.label}>
-              <div className="bar-tip">
-                {d.label} · {d.value}
-                {unit ? ` ${unit}` : ""}
-              </div>
-              <div className="bar">
-                <div className="bar-fill" style={{ height: `${h}%` }} />
-              </div>
-              <div className="bar-label" title={d.label}>
-                {d.label}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+    <div className="bar-chart">
+      {data.map((d) => (
+        <div className="bar-row" key={d.label}>
+          <div className="bar-meta">
+            <span className="truncate" style={{ maxWidth: "70%" }}>{d.label}</span>
+            <span style={{ color: "var(--text)", fontWeight: 600 }}>{d.value}</span>
+          </div>
+          <div className="bar-track">
+            <div
+              className="bar-fill"
+              style={{
+                width: `${(d.value / max) * 100}%`,
+                background: d.color || "var(--blue)",
+              }}
+            />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
 
-export interface DonutDatum {
-  label: string;
-  value: number;
-  color: string;
-}
-
-/** Donut with legend rows (count + share). Segments carry a surface gap. */
-export function DonutChart({ data, centerLabel }: { data: DonutDatum[]; centerLabel: string }) {
+/* ---- Donut Chart ---- */
+export function DonutChart({
+  data,
+  centerLabel,
+  size = 120,
+}: {
+  data: DataPoint[];
+  centerLabel?: string;
+  size?: number;
+}) {
+  if (!data.length) return null;
   const total = data.reduce((s, d) => s + d.value, 0) || 1;
-  const R = 60;
-  const C = 2 * Math.PI * R;
-  let acc = 0;
-  const segments = data
-    .filter((d) => d.value > 0)
-    .map((d) => {
-      const frac = d.value / total;
-      const dash = Math.max(frac * C - 3.5, 0.5); // 2px-ish surface gap between segments
-      const off = -acc * C;
-      acc += frac;
-      return { ...d, frac, dash, off };
-    });
+  const r = 42;
+  const cx = 60;
+  const cy = 60;
+  const circ = 2 * Math.PI * r;
+  let offset = 0;
+
+  const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#f43f5e", "#8b5cf6", "#06b6d4"];
+
+  const slices = data.map((d, i) => {
+    const pct = d.value / total;
+    const dash = pct * circ;
+    const gap = circ - dash;
+    const slice = (
+      <circle
+        key={d.label}
+        r={r}
+        cx={cx}
+        cy={cy}
+        fill="none"
+        stroke={d.color || COLORS[i % COLORS.length]}
+        strokeWidth={14}
+        strokeDasharray={`${dash} ${gap}`}
+        strokeDashoffset={-offset}
+        transform={`rotate(-90 ${cx} ${cy})`}
+        style={{ transition: "stroke-dasharray 0.6s cubic-bezier(0.16,1,0.3,1)" }}
+      />
+    );
+    offset += dash;
+    return slice;
+  });
 
   return (
     <div className="donut-wrap">
-      <div className="donut">
-        <svg viewBox="0 0 150 150" role="img" aria-label={centerLabel}>
-          <circle cx={75} cy={75} r={R} fill="none" stroke="#1e2733" strokeWidth="17" />
-          {segments.map((s) => (
-            <circle
-              key={s.label}
-              cx={75}
-              cy={75}
-              r={R}
-              fill="none"
-              stroke={s.color}
-              strokeWidth="15"
-              strokeDasharray={`${s.dash} ${C - s.dash}`}
-              strokeDashoffset={s.off}
-              strokeLinecap="round"
-            />
-          ))}
+      <div style={{ position: "relative", flexShrink: 0 }}>
+        <svg width={size} height={size} viewBox="0 0 120 120">
+          <circle r={r} cx={cx} cy={cy} fill="none" stroke="var(--bg-3)" strokeWidth={14} />
+          {slices}
         </svg>
-        <div className="donut-center">
-          <b>{total}</b>
-          <span>{centerLabel}</span>
-        </div>
+        {centerLabel && (
+          <div style={{
+            position: "absolute", inset: 0,
+            display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center",
+            pointerEvents: "none",
+          }}>
+            <span style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.03em" }}>{total}</span>
+            <span style={{ fontSize: 10, color: "var(--text-3)", marginTop: 1 }}>{centerLabel}</span>
+          </div>
+        )}
       </div>
       <div className="donut-labels">
-        {data.map((d) => {
-          const pct = total ? Math.round((d.value / total) * 100) : 0;
-          return (
-            <div className="donut-row" key={d.label}>
-              <span className="swatch" style={{ background: d.color }} />
-              <span>{d.label}</span>
-              <b>
-                {d.value} · {pct}%
-              </b>
-            </div>
-          );
-        })}
+        {data.map((d, i) => (
+          <div className="donut-row" key={d.label}>
+            <span className="swatch" style={{ background: d.color || COLORS[i % COLORS.length] }} />
+            <span className="truncate">{d.label}</span>
+            <b>{d.value}</b>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-export interface LineDatum {
-  label: string;
-  value: number;
-}
+/* ---- Line Chart ---- */
+export function LineChart({ data }: { data: DataPoint[] }) {
+  if (!data.length) return null;
+  const W = 600;
+  const H = 120;
+  const PAD = { t: 8, r: 8, b: 24, l: 8 };
+  const max = Math.max(...data.map((d) => d.value), 1);
+  const xStep = (W - PAD.l - PAD.r) / Math.max(data.length - 1, 1);
+  const yScale = (v: number) => PAD.t + (1 - v / max) * (H - PAD.t - PAD.b);
 
-/** Single-series time chart: area + 2px line + hoverable point markers. */
-export function LineChart({ data }: { data: LineDatum[] }) {
-  const W = 640;
-  const H = 180;
-  const PL = 34;
-  const PR = 10;
-  const PT = 10;
-  const PB = 26;
-  const plotW = W - PL - PR;
-  const plotH = H - PT - PB;
-  const nice = niceCeil(Math.max(1, ...data.map((d) => d.value)));
+  const pts = data.map((d, i) => ({
+    x: PAD.l + i * xStep,
+    y: yScale(d.value),
+    d,
+  }));
 
-  const x = (i: number) =>
-    data.length <= 1 ? PL + plotW / 2 : PL + plotW * (i / (data.length - 1));
-  const y = (v: number) => PT + plotH * (1 - v / nice);
+  const pathD = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
+  const areaD =
+    `M${pts[0].x},${H - PAD.b} ` +
+    pts.map((p) => `L${p.x},${p.y}`).join(" ") +
+    ` L${pts[pts.length - 1].x},${H - PAD.b} Z`;
 
-  const pts = data.map((d, i) => [x(i), y(d.value)] as const);
-  const line = pts
-    .map(([px, py], i) => `${i === 0 ? "M" : "L"}${px.toFixed(1)},${py.toFixed(1)}`)
-    .join(" ");
-  const area = `${line} L${x(data.length - 1).toFixed(1)},${(H - PB).toFixed(1)} L${x(0).toFixed(
-    1,
-  )},${(H - PB).toFixed(1)} Z`;
-
-  const grid = [0.25, 0.5, 0.75, 1].map((f) => {
-    const gy = PT + plotH * (1 - f);
-    return { gy, label: Math.round(nice * f) };
-  });
-
-  // Show every other x label when crowded.
-  const step = data.length > 8 ? 2 : 1;
+  // Show every nth label to avoid clutter
+  const labelEvery = Math.max(1, Math.floor(data.length / 6));
 
   return (
-    <div className="chart line-chart">
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Analyses over time">
-        <defs>
-          <linearGradient id="lgrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#2dd4bf" stopOpacity="0.22" />
-            <stop offset="100%" stopColor="#2dd4bf" stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        {grid.map((g) => (
-          <g key={g.label}>
-            <line x1={PL} y1={g.gy} x2={W - PR} y2={g.gy} stroke="#18202c" strokeWidth="1" />
-            <text x={PL - 6} y={g.gy + 3} textAnchor="end" fontSize="10" fill="#5c6a7d">
-              {g.label}
+    <svg className="line-chart-svg" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ height: 120 }}>
+      <defs>
+        <linearGradient id="lg-line" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.25" />
+          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={areaD} fill="url(#lg-line)" />
+      <path d={pathD} fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      {pts.map((p, i) => (
+        <g key={i}>
+          <circle cx={p.x} cy={p.y} r="3" fill="#3b82f6" />
+          {i % labelEvery === 0 && (
+            <text
+              x={p.x}
+              y={H - 4}
+              textAnchor="middle"
+              fill="var(--text-4)"
+              fontSize="9"
+              fontFamily="var(--font)"
+            >
+              {p.d.label.slice(5)}
             </text>
-          </g>
-        ))}
-        {data.length > 0 && <path d={area} fill="url(#lgrad)" />}
-        {data.length > 0 && (
-          <path d={line} fill="none" stroke="#2dd4bf" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-        )}
-        {pts.map(([px, py], i) => (
-          <g key={i}>
-            <circle className="line-pt" cx={px} cy={py} r="4" fill="#2dd4bf" stroke="#0a0e14" strokeWidth="2">
-              <title>
-                {data[i].label} · {data[i].value}
-              </title>
-            </circle>
-            {i % step === 0 && (
-              <text
-                x={px}
-                y={H - 8}
-                textAnchor="middle"
-                fontSize="10"
-                fill="#5c6a7d"
-              >
-                {data[i].label}
-              </text>
-            )}
-          </g>
-        ))}
-      </svg>
-    </div>
+          )}
+        </g>
+      ))}
+    </svg>
   );
 }

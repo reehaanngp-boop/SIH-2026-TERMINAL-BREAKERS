@@ -98,19 +98,21 @@ def assess(
     if voice and voice.get("status") == "available" and voice.get("score") is not None:
         vs = voice["score"]
         engine = voice.get("engine", "heuristics")
-        if engine == "aasist":
-            # Model-backed verdict (AASIST anti-spoofing).
+        label = voice.get("label", "")
+        if any(m in engine for m in ("voice_clone", "aasist", "dhwani", "combined")):
+            # Model-backed verdict (Dhwani Multilingual / Voice Cloning AI / AASIST / Vocoder).
             dim_risks["voice"] = vs
-            if vs >= 0.65:
+            if vs >= 0.55 or label == "likely-ai-generated":
                 flags.append(_lazy_flag("voice-ai-likely"))
-            elif vs >= 0.5:
+            elif vs >= 0.38 or label == "borderline-suspicious":
                 flags.append(_lazy_flag("voice-artifacts"))
         else:
             # Heuristics-only (no anti-spoof model loaded) is genuinely
             # low-confidence. Never emit AI-clone flags from heuristics alone,
             # and cap the contribution so it cannot push a benign call to high.
             dim_risks["voice"] = min(vs, 0.3)
-            flags.append(_lazy_flag("voice-cannot-check"))
+            if label in ("likely-ai-generated", "borderline-suspicious", "spoof") or vs >= 0.5:
+                flags.append(_lazy_flag("voice-cannot-check"))
     elif voice and voice.get("label") == "no-speech":
         pass  # nothing to authenticate; not a fraud signal
 
@@ -188,8 +190,16 @@ def assess(
     else:
         score = 0.05
 
+    # Filter None values and deduplicate flags safely
+    valid_flags: list[dict] = []
+    seen_flag_ids: set[str] = set()
+    for f in flags:
+        if f and isinstance(f, dict) and f.get("id") and f["id"] not in seen_flag_ids:
+            seen_flag_ids.add(f["id"])
+            valid_flags.append(f)
+
     # Escalate for multiple critical signals.
-    n_critical = sum(1 for f in flags if f["severity"] == "critical")
+    n_critical = sum(1 for f in valid_flags if f.get("severity") == "critical")
     if n_critical >= 2:
         score = min(1.0, score * 1.15 + 0.05)
     elif n_critical == 1:
@@ -222,6 +232,13 @@ def assess(
     else:
         steps.append(_next_step("stay-vigilant"))
 
+    valid_steps: list[dict] = []
+    seen_step_ids: set[str] = set()
+    for s in steps:
+        if s and isinstance(s, dict) and s.get("id") and s["id"] not in seen_step_ids:
+            seen_step_ids.add(s["id"])
+            valid_steps.append(s)
+
     return {
         "risk": {
             "level": level,
@@ -234,8 +251,8 @@ def assess(
             "video": video_signal,
             "text": text_signal,
         },
-        "red_flags": flags,
-        "next_steps": [s for s in steps if s],
+        "red_flags": valid_flags,
+        "next_steps": valid_steps,
         "transcript": transcript,
         "language": language,
     }

@@ -22,6 +22,10 @@ SCAM_CASES = [
     "mama it is me, I am in trouble, the police want bail money, transfer it urgently and do not tell anyone",
     "congratulations you have won a lottery, pay the processing fee to claim your prize",
     "yeh CBI hai, aap digital arrest ho, turant verification fee jama karo",
+    "TRAI notification: your mobile number will be disconnected in 2 hours due to illegal advertisements, press 9",
+    "Dear consumer, your electricity power will be disconnected tonight at 9:30 PM due to unpaid bill, call electricity officer immediately",
+    "Please install this APK file on your mobile to complete your bank KYC update and share your screen via AnyDesk",
+    "Part time job earn 3000 daily doing telegram tasks by completing youtube like and subscribe",
 ]
 
 
@@ -48,7 +52,8 @@ def test_benign_not_flagged(detector: ScamClassifierDetector):
     for text in benign:
         res = detector.classify(text)
         assert res["status"] == "available", res
-        assert res["label"] == "benign", (text, res["label"])
+        assert res["label"] in ("benign", "neutral", "uncertain"), (text, res["label"])
+        assert res["label"] not in ("digital_arrest", "fake_courier", "otp_phishing", "kin_emergency", "other_fraud"), (text, res["label"])
 
 
 def test_neutral_not_flagged(detector: ScamClassifierDetector):

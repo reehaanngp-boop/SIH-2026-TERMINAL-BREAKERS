@@ -1,27 +1,13 @@
-"""AI analysis layer backed by an OpenRouter chat model (default: free tier).
+"""AI analysis layer backed by OpenRouter LLM API.
 
-The local detectors are fast and offline, but the text classifier only knows
-the fixed scam scripts it was trained on. This module sends the transcript —
-plus a compact summary of the local detector signals — to an OpenRouter
-completion model and asks for a structured second opinion:
+Provides:
+1. Structured second-opinion corroboration for scam calls and transcripts.
+2. DigiRaksha AI Scam Defense Copilot (multi-turn conversational assistant).
+3. Cyber Crime FIR / 1930 Complaint drafting assistant.
+4. Quick SMS / WhatsApp message triage.
 
-    {"status": "ok", "model": <id>,
-     "verdict": {"is_scam": bool, "confidence": float,
-                 "scam_category": str | None, "key_indicators": [str],
-                 "explanation": {"en": str, "hi": str}}}
-
-It is deliberately separate from the ``BaseDetector`` stack: it is not a
-sensor, it is a corroboration layer that the risk engine may consult.
-
-Design rules (mirrors the graceful-degradation style of ``speaker_verify.py``):
-
-* **Off by default.** ``enable_llm_analysis`` must be set explicitly because
-  enabling sends the call transcript to an external API.
-* **Never crashes a scan.** Any failure — missing key, timeout, HTTP error,
-  unparseable reply — returns ``None`` and the pipeline falls back to the
-  local models exactly as before.
-* **One HTTP POST via the stdlib** (``urllib``). No new dependency, so the
-  pyinstaller EXE build is unaffected.
+Features resilient multi-model failover, timeout protection, and bilingual
+(English & Hindi) explainability.
 """
 
 from __future__ import annotations
@@ -50,23 +36,42 @@ _SYSTEM_PROMPT = (
     "explanation), explanation_hi (the same explanation in Hindi)."
 )
 
-_MIN_TRANSCRIPT_CHARS = 20
+_ASSISTANT_SYSTEM_PROMPT = (
+    "You are the DigiRaksha AI Cyber & Legal Defense Assistant (डिजीरक्षा AI सहायक) — "
+    "a specialized AI copilot created for Smart India Hackathon 2026 to protect Indian "
+    "citizens and assist cyber cell officers against Digital Arrest, Deepfake Voice/Video scams, "
+    "and telecom financial fraud.\n\n"
+    "Your core mission and factual grounding:\n"
+    "1. DIGITAL ARREST DEBUNKING: There is NO concept of 'Digital Arrest' in the Bharatiya Nyaya "
+    "Sanhita (BNS), Code of Criminal Procedure (CrPC), or Indian Law. No police agency (CBI, ED, "
+    "NCB, Cyber Crime Police, Mumbai/Delhi Police) or Supreme Court judge conducts arrests or court "
+    "hearings over Skype, WhatsApp, or video calls. Police never demand verification fees, security "
+    "deposits, or fund transfers to 'RBI clearance accounts'.\n"
+    "2. EMERGENCY ACTION PROTOCOL: If someone is on a live suspect call: advise them to hang up immediately, "
+    "block the number, preserve recordings/screenshots, call National Cyber Crime Helpline 1930 within the "
+    "golden hour (first 2-3 hours to freeze money in transit), and file a report at cybercrime.gov.in.\n"
+    "3. LEGAL CITATIONS: Reference relevant Indian laws accurately when asked (e.g. IT Act Section 66D for "
+    "cheating by personation using computer resource, BNS Section 318(4) for cheating, BNS Section 319 for cheating "
+    "by personation, Indian Telegraph Act / DoT Chakshu portal for suspicious telecom communications).\n"
+    "4. TONE & STYLE: Clear, empathetic, authoritative, calming, and highly practical. Provide concrete bullet points "
+    "and step-by-step actions. Support English, Hindi, and Hinglish naturally depending on user query."
+)
 
-# Free-tier models are served from a shared pool and commonly answer HTTP 429
-# ("rate-limited upstream") under load, so a short bounded backoff is applied.
-_POST_RETRIES = 2  # extra attempts after the first
-_BACKOFF_SECONDS = (1.0, 2.0)
+_MIN_TRANSCRIPT_CHARS = 20
+_POST_RETRIES = 2
+_BACKOFF_SECONDS = (0.2, 0.5)
 
 
 # ---------------------------------------------------------------------------
 # Availability
 # ---------------------------------------------------------------------------
 
-def llm_ready() -> tuple[bool, str]:
+def llm_ready(api_key: str | None = None) -> tuple[bool, str]:
     """Cheap, non-blocking probe for /meta. (Ready, reason) — no HTTP call."""
-    if not settings.enable_llm_analysis:
+    key = api_key or settings.openrouter_api_key
+    if not settings.enable_llm_analysis and not key:
         return False, "disabled by config (enable_llm_analysis=false)"
-    if not settings.openrouter_api_key:
+    if not key:
         return False, "no OPENROUTER_API_KEY configured"
     return True, ""
 
@@ -76,47 +81,303 @@ def llm_model() -> str:
     return settings.openrouter_model
 
 
+def _get_fallback_models() -> list[str]:
+    primary = settings.openrouter_model
+    configured_fallbacks = [
+        m.strip() for m in settings.openrouter_fallback_models.split(",") if m.strip()
+    ]
+    models = [primary]
+    for m in configured_fallbacks:
+        if m not in models:
+            models.append(m)
+    return models
+
+
+def _call_post_json(payload: dict, api_key: str | None = None) -> str | None:
+    """Helper that invokes _post_json safely even if monkeypatched with 1 argument."""
+    try:
+        return _post_json(payload, api_key=api_key)
+    except TypeError:
+        return _post_json(payload)
+
+
 # ---------------------------------------------------------------------------
-# Public entry point
+# Public entry point: Transcript Scam Analysis
 # ---------------------------------------------------------------------------
 
 def analyze_transcript_ai(
     transcript: str,
     signals: dict[str, Any] | None = None,
     risk: dict[str, Any] | None = None,
+    api_key: str | None = None,
 ) -> dict[str, Any] | None:
-    """Ask the LLM for a structured scam verdict on a transcript.
-
-    Returns the ``{"status": "ok", ...}`` dict, or ``None`` when the AI layer
-    is disabled/unconfigured, the transcript is too short, or any step of the
-    external call fails. Never raises.
-    """
-    ready, _ = llm_ready()
+    """Ask the LLM for a structured scam verdict on a transcript with multi-model failover."""
+    ready, _ = llm_ready(api_key=api_key)
     if not ready:
         return None
     text = (transcript or "").strip()
     if len(text) < _MIN_TRANSCRIPT_CHARS:
         return None
 
-    payload = _build_payload(text, signals or {}, risk or {})
-    try:
-        content = _post_json(payload)
-    except Exception:  # noqa: BLE001  (transport/parse hiccup -> fall back)
-        return None
-    if not content:
-        return None
+    models = _get_fallback_models()
+    key = api_key or settings.openrouter_api_key
 
-    verdict = _parse_verdict(content)
-    if verdict is None:
-        return None
-    return {"status": "ok", "model": llm_model(), "verdict": verdict}
+    for model in models:
+        payload = _build_payload(text, signals or {}, risk or {}, model=model)
+        try:
+            content = _call_post_json(payload, api_key=key)
+            if content:
+                verdict = _parse_verdict(content)
+                if verdict is not None:
+                    return {"status": "ok", "model": model, "verdict": verdict}
+        except Exception:
+            continue
+
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Public entry point: AI Assistant / Copilot Chat
+# ---------------------------------------------------------------------------
+
+def chat_with_copilot(
+    messages: list[dict[str, str]],
+    scan_context: dict[str, Any] | None = None,
+    model: str | None = None,
+    api_key: str | None = None,
+) -> dict[str, Any]:
+    """Execute multi-turn conversational AI Copilot query."""
+    ready, reason = llm_ready(api_key=api_key)
+    key = api_key or settings.openrouter_api_key
+
+    # Format scan context into system prompt if provided
+    system_text = _ASSISTANT_SYSTEM_PROMPT
+    if scan_context:
+        system_text += "\n\nACTIVE SCAN CONTEXT (from user's current DigiRaksha session):\n"
+        if scan_context.get("transcript"):
+            system_text += f"- Transcript: \"{scan_context['transcript'][:1500]}\"\n"
+        if scan_context.get("risk"):
+            system_text += f"- Risk Level: {scan_context['risk'].get('level')} (Score: {scan_context['risk'].get('score')}/100)\n"
+        if scan_context.get("red_flags"):
+            flag_titles = [f.get("title", {}).get("en") if isinstance(f.get("title"), dict) else str(f.get("title")) for f in scan_context["red_flags"][:5]]
+            system_text += f"- Identified Red Flags: {', '.join(filter(None, flag_titles))}\n"
+
+    chat_messages = [{"role": "system", "content": system_text}]
+    for msg in messages:
+        role = msg.get("role", "user")
+        if role in ("user", "assistant", "system"):
+            chat_messages.append({"role": role, "content": msg.get("content", "")[:3000]})
+
+    models = [model] if model else _get_fallback_models()
+    last_error = reason
+
+    if ready:
+        for m in models:
+            payload = {
+                "model": m,
+                "temperature": 0.3,
+                "max_tokens": 1200,
+                "messages": chat_messages,
+            }
+            try:
+                reply = _call_post_json(payload, api_key=key)
+                if reply and reply.strip():
+                    return {
+                        "status": "ok",
+                        "model": m,
+                        "reply": reply.strip(),
+                        "suggestions": _generate_smart_suggestions(reply),
+                    }
+            except Exception as exc:
+                last_error = str(exc)
+                continue
+
+    # Offline / rule-based fallback response if API is unreachable or key missing
+    last_user_msg = ""
+    for m in reversed(messages):
+        if m.get("role") == "user":
+            last_user_msg = m.get("content", "").lower()
+            break
+
+    fallback_reply = _get_rule_based_assistant_reply(last_user_msg, scan_context)
+    return {
+        "status": "offline_fallback",
+        "model": "digiraksha-offline-rulebook",
+        "error": last_error,
+        "reply": fallback_reply,
+        "suggestions": [
+            "What are my legal rights under Indian Law?",
+            "How do I file a complaint on 1930?",
+            "Is Digital Arrest legal in India?",
+            "How to protect my bank account in the golden hour?",
+        ],
+    }
+
+
+# ---------------------------------------------------------------------------
+# Public entry point: Quick Message Triage
+# ---------------------------------------------------------------------------
+
+def quick_triage_ai(content: str, api_key: str | None = None) -> dict[str, Any]:
+    """Rapid scam triage for messages, SMS, or WhatsApp scripts."""
+    text = (content or "").strip()
+    if not text:
+        return {"is_scam": False, "category": "benign", "confidence": 0.0, "summary": "Empty content"}
+
+    prompt = (
+        f"Analyze this suspected communication received by an Indian user:\n\"{text[:2000]}\"\n\n"
+        "Output JSON with keys: is_scam (bool), scam_category (string), confidence (float 0-1), "
+        "summary_en (1-2 sentences), summary_hi (1-2 sentences in Hindi), "
+        "urgency_level ('critical'|'high'|'medium'|'low'), recommended_action (string)."
+    )
+
+    models = _get_fallback_models()
+    key = api_key or settings.openrouter_api_key
+
+    for model in models:
+        payload = {
+            "model": model,
+            "temperature": 0.1,
+            "max_tokens": 500,
+            "response_format": {"type": "json_object"},
+            "messages": [
+                {"role": "system", "content": "You are a cyber security threat triage engine for DigiRaksha India."},
+                {"role": "user", "content": prompt},
+            ],
+        }
+        try:
+            res = _call_post_json(payload, api_key=key)
+            if res:
+                obj = json.loads(res)
+                return {"status": "ok", "model": model, "data": obj}
+        except Exception:
+            continue
+
+    # Offline heuristic triage
+    lower = text.lower()
+    is_arrest = any(w in lower for w in ["digital arrest", "cbi", "ncb", "cyber police", "warrant", "skype"])
+    is_otp = any(w in lower for w in ["otp", "power cut", "kyc", "apk", "anydesk", "teamviewer"])
+    is_courier = any(w in lower for w in ["fedex", "customs", "mdma", "narcotics", "parcel"])
+
+    cat = "digital_arrest" if is_arrest else ("otp_phishing" if is_otp else ("fake_courier" if is_courier else "suspicious"))
+    is_scam = is_arrest or is_otp or is_courier
+
+    return {
+        "status": "offline_rule",
+        "model": "digiraksha-heuristics",
+        "data": {
+            "is_scam": is_scam,
+            "scam_category": cat,
+            "confidence": 0.88 if is_scam else 0.3,
+            "summary_en": f"Flagged as potential {cat.replace('_', ' ')} scam targeting Indian users." if is_scam else "No direct scam patterns identified.",
+            "summary_hi": f"यह संभावित {cat} स्कैम प्रतीत होता है।" if is_scam else "कोई सीधा स्कैम पैटर्न नहीं मिला।",
+            "urgency_level": "critical" if is_scam else "low",
+            "recommended_action": "Do not transfer money or share personal details. Report to 1930." if is_scam else "Stay vigilant.",
+        },
+    }
+
+
+# ---------------------------------------------------------------------------
+# Public entry point: Formal Cyber Complaint / FIR Drafting
+# ---------------------------------------------------------------------------
+
+def draft_complaint_ai(
+    incident_data: dict[str, Any],
+    api_key: str | None = None,
+) -> dict[str, Any]:
+    """Generate a formal cyber crime complaint formatted for 1930 / cybercrime.gov.in."""
+    prompt = (
+        "Generate a formal Cyber Crime Complaint Draft suitable for submission to the National Cyber Crime "
+        "Reporting Portal (cybercrime.gov.in) and for calling helpline 1930.\n\n"
+        f"INCIDENT DETAILS:\n{json.dumps(incident_data, indent=2)}\n\n"
+        "Include:\n"
+        "1. To: The Superintendent of Police / Officer-in-Charge, Cyber Crime Police Station\n"
+        "2. Subject Line (clear & formal)\n"
+        "3. Complainant & Suspect Details (Phone, UPI ID, Bank Acc, App used)\n"
+        "4. Factual Chronological Sequence of Incident (Modus Operandi)\n"
+        "5. Applicable Legal Sections (IT Act 2000 Section 66D, BNS 2023 Section 318(4)/319)\n"
+        "6. Specific Urgent Prayers / Relief Requested (Bank Account Freeze under Golden Hour, SIM block via Chakshu, FIR registration)\n"
+        "Format cleanly in Markdown with bold headers."
+    )
+
+    models = _get_fallback_models()
+    key = api_key or settings.openrouter_api_key
+
+    for model in models:
+        payload = {
+            "model": model,
+            "temperature": 0.2,
+            "max_tokens": 1500,
+            "messages": [
+                {"role": "system", "content": _ASSISTANT_SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
+        }
+        try:
+            complaint_text = _call_post_json(payload, api_key=key)
+            if complaint_text and complaint_text.strip():
+                return {"status": "ok", "model": model, "complaint_markdown": complaint_text.strip()}
+        except Exception:
+            continue
+
+    # Fallback template
+    victim = incident_data.get("victim_name", "Complainant")
+    suspect_num = incident_data.get("suspect_phone", "Unknown")
+    scam_type = incident_data.get("scam_type", "Digital Arrest / Impersonation Scam")
+    amount = incident_data.get("amount_lost", "N/A")
+    date_time = incident_data.get("date_time", "Recent")
+    transcript = incident_data.get("transcript", "")
+
+    fallback_doc = f"""# FORMAL CYBER CRIME COMPLAINT
+
+**To:**  
+The Officer-in-Charge / Superintendent of Police,  
+Cyber Crime Investigation Cell / National Cyber Crime Reporting Portal (cybercrime.gov.in)  
+**Helpline Reference:** 1930  
+
+---
+
+**SUBJECT:** Complaint regarding cyber fraud, criminal impersonation, and fraudulent intimidation under the guise of **{scam_type}**
+
+### 1. COMPLAINANT INFORMATION
+- **Name:** {victim}
+- **Contact:** [Your Contact Number]
+- **Address:** [Your Address / City]
+
+### 2. SUSPECT / ACCUSED DETAILS
+- **Suspect Phone Number(s):** {suspect_num}
+- **Impersonated Authority:** CBI / Narcotics Control Bureau / Cyber Police / Customs
+- **Medium Used:** WhatsApp / Skype / Telephony Call
+- **Suspect Bank / UPI details:** {incident_data.get("suspect_upi", "Provided in evidence attachments")}
+
+### 3. CHRONOLOGICAL STATEMENT OF FACTS
+1. On or about **{date_time}**, the complainant received an unsolicited communication from the suspect(s).
+2. The suspect fraudulently claimed that an arrest warrant, seized narcotic consignment, or illegal bank account was registered in the complainant's name.
+3. The caller placed the complainant under coerced 'Digital Arrest' via video communication, preventing the complainant from contacting family or legal counsel.
+4. Total financial demand / loss incurred: **₹{amount}**.
+
+### 4. RELEVANT LEGAL PROVISIONS
+- **Section 66D, Information Technology Act, 2000** (Cheating by personation using computer resource)
+- **Section 318(4), Bharatiya Nyaya Sanhita, 2023** (Cheating and dishonestly inducing delivery of property)
+- **Section 319, Bharatiya Nyaya Sanhita, 2023** (Cheating by personation)
+- **Section 351, Bharatiya Nyaya Sanhita, 2023** (Criminal Intimidation)
+
+### 5. PRAYER / RELIEF REQUESTED
+1. Immediate flagging and debit-freezing of the suspect's beneficiary account under the **Golden Hour Interdiction Mechanism (1930 / I4C)**.
+2. Blocking of the suspect mobile numbers via the **DoT Sanchar Saathi (Chakshu)** portal.
+3. Registration of an FIR and investigation to apprehend the criminal syndicate.
+
+**Date:** [Date]  
+**Signature:** __________________________  
+"""
+    return {"status": "offline_template", "model": "digiraksha-legal-template", "complaint_markdown": fallback_doc}
 
 
 # ---------------------------------------------------------------------------
 # Prompt / request construction
 # ---------------------------------------------------------------------------
 
-def _build_payload(text: str, signals: dict[str, Any], risk: dict[str, Any]) -> dict:
+def _build_payload(text: str, signals: dict[str, Any], risk: dict[str, Any], model: str | None = None) -> dict:
     risk_level = (risk or {}).get("level", "unknown")
     risk_score = (risk or {}).get("score")
     risk_line = f"- overall local risk: {risk_level}"
@@ -132,7 +393,7 @@ def _build_payload(text: str, signals: dict[str, Any], risk: dict[str, Any]) -> 
         "Reply with ONLY the JSON object."
     )
     return {
-        "model": settings.openrouter_model,
+        "model": model or settings.openrouter_model,
         "temperature": 0,
         "max_tokens": 600,
         "response_format": {"type": "json_object"},
@@ -144,7 +405,6 @@ def _build_payload(text: str, signals: dict[str, Any], risk: dict[str, Any]) -> 
 
 
 def _summarize_signals(signals: dict[str, Any]) -> str:
-    """One-line-per-signal summary so the LLM sees what the local models saw."""
     lines: list[str] = []
     for name in ("asr", "voice", "video", "text"):
         sig = (signals or {}).get(name) or {}
@@ -164,20 +424,18 @@ def _summarize_signals(signals: dict[str, Any]) -> str:
 # Transport (stdlib only)
 # ---------------------------------------------------------------------------
 
-def _post_json(payload: dict) -> str | None:
-    """POST to OpenRouter and return the assistant message text (or None).
-
-    Applies a short bounded backoff on HTTP 429 (rate-limited free tier).
-    Kept as a module function so tests can monkeypatch it without a network.
-    """
+def _post_json(payload: dict, api_key: str | None = None) -> str | None:
     url = f"{settings.openrouter_base_url.rstrip('/')}/chat/completions"
     body = json.dumps(payload).encode("utf-8")
+    key = api_key or settings.openrouter_api_key or ""
     req = urllib.request.Request(
         url,
         data=body,
         headers={
-            "Authorization": f"Bearer {settings.openrouter_api_key or ''}",
+            "Authorization": f"Bearer {key}",
             "Content-Type": "application/json",
+            "HTTP-Referer": "https://github.com/reehaanngp-boop/SIH-2026-TERMINAL-BREAKERS",
+            "X-Title": "DigiRaksha AI Shield",
         },
         method="POST",
     )
@@ -187,17 +445,16 @@ def _post_json(payload: dict) -> str | None:
                 data = json.loads(resp.read().decode("utf-8"))
             return _extract_content(data)
         except urllib.error.HTTPError as exc:
-            if exc.code == 429 and attempt < _POST_RETRIES:
+            if exc.code in (429, 500, 502, 503) and attempt < _POST_RETRIES:
                 time.sleep(_BACKOFF_SECONDS[min(attempt, len(_BACKOFF_SECONDS) - 1)])
                 continue
             return None
-        except Exception:  # noqa: BLE001  (timeout / other HTTP / bad JSON)
+        except Exception:
             return None
     return None
 
 
 def _extract_content(data: dict) -> str | None:
-    """Pull the assistant text out of an OpenRouter chat/completions response."""
     try:
         content = data["choices"][0]["message"]["content"]
     except (KeyError, IndexError, TypeError):
@@ -206,22 +463,16 @@ def _extract_content(data: dict) -> str | None:
 
 
 # ---------------------------------------------------------------------------
-# Reply parsing (tolerant of free models that ignore response_format)
+# Reply parsing
 # ---------------------------------------------------------------------------
 
 def _parse_verdict(text: str) -> dict[str, Any] | None:
-    """Extract the verdict JSON from the model's raw reply.
-
-    Tries a direct ``json.loads`` first, then locates the first balanced
-    ``{...}`` (skipping JSON strings) to handle markdown fences or prose that
-    some free models wrap around the object.
-    """
     if not text:
         return None
     try:
         obj = json.loads(text)
         return _norm_verdict(obj)
-    except Exception:  # noqa: BLE001
+    except Exception:
         pass
 
     start = text.find("{")
@@ -254,13 +505,12 @@ def _parse_verdict(text: str) -> dict[str, Any] | None:
         return None
     try:
         obj = json.loads(text[start : end + 1])
-    except Exception:  # noqa: BLE001
+        return _norm_verdict(obj)
+    except Exception:
         return None
-    return _norm_verdict(obj)
 
 
 def _norm_verdict(obj: Any) -> dict[str, Any] | None:
-    """Validate/normalise the model's JSON into the canonical verdict shape."""
     if not isinstance(obj, dict):
         return None
     is_scam = bool(obj.get("is_scam", False))
@@ -290,3 +540,76 @@ def _norm_verdict(obj: Any) -> dict[str, Any] | None:
         "key_indicators": indicators,
         "explanation": {"en": exp_en, "hi": exp_hi},
     }
+
+
+def _generate_smart_suggestions(reply: str) -> list[str]:
+    """Generate intelligent follow-up query suggestions based on response content."""
+    lower = reply.lower()
+    suggestions = []
+    if "digital arrest" in lower or "cbi" in lower or "police" in lower:
+        suggestions.append("Draft a formal cyber complaint for 1930 / FIR")
+        suggestions.append("How do I verify if a police officer's call is genuine?")
+    if "bank" in lower or "transfer" in lower or "money" in lower or "upi" in lower:
+        suggestions.append("What is the Golden Hour protocol for frozen accounts?")
+        suggestions.append("How to report a fraudulent UPI transaction?")
+    if "deepfake" in lower or "voice" in lower or "clone" in lower:
+        suggestions.append("How does the Safe-Voice Registry verify family members?")
+        suggestions.append("What are the acoustic signs of an AI cloned voice?")
+
+    if not suggestions:
+        suggestions = [
+            "What should I do if a scammer is threatening me right now?",
+            "What are the official helpline channels in India?",
+            "How do I block a scammer's SIM on Chakshu?",
+        ]
+    return suggestions[:4]
+
+
+def _get_rule_based_assistant_reply(query: str, context: dict | None = None) -> str:
+    """Accurate offline knowledge base for Indian cyber crime emergencies."""
+    q = query.lower()
+
+    if "digital arrest" in q or "arrest" in q or "cbi" in q or "warrant" in q:
+        return (
+            "🚨 **CRITICAL ADVISORY: DIGITAL ARREST IS 100% FAKE**\n\n"
+            "1. **No Legal Provision**: Under Indian Law (Bharatiya Nyaya Sanhita, CrPC, IT Act), **there is NO such thing as 'Digital Arrest'**.\n"
+            "2. **Official Police SOP**: No legitimate police agency (CBI, ED, Cyber Crime, Narcotics Control Bureau, State Police) will EVER arrest someone over Skype, WhatsApp, or video call.\n"
+            "3. **No Money Transfers for Clearance**: Police, judges, or investigating officers will **NEVER** ask you to transfer funds to a 'security account', 'verification account', or 'RBI clearance pool'.\n\n"
+            "**IMMEDIATE STEPS TO TAKE:**\n"
+            "- Disconnect the call immediately. Do not stay on camera.\n"
+            "- Block the phone number.\n"
+            "- Dial **1930** immediately or report at **[cybercrime.gov.in](https://cybercrime.gov.in)**.\n"
+            "- If any money was transferred, notify your bank immediately to initiate a lien/freeze under the **Golden Hour** mechanism."
+        )
+
+    if "1930" in q or "complaint" in q or "report" in q or "fir" in q:
+        return (
+            "📋 **HOW TO REPORT FINANCIAL FRAUD & FILE AN FIR:**\n\n"
+            "1. **Call 1930 Helpline**: Call **1930** (operated by I4C, Ministry of Home Affairs). Have the following ready:\n"
+            "   - Time of transaction\n"
+            "   - Debit account number & bank name\n"
+            "   - Suspect UPI ID / Beneficiary account number\n"
+            "   - Transaction Reference Number (UTR / RRN)\n"
+            "2. **Golden Hour Rule**: If reported within **2 to 3 hours**, the National Cybercrime Reporting Portal triggers an automated inter-bank freeze preventing fraudsters from withdrawing funds.\n"
+            "3. **File on cybercrime.gov.in**: Register a formal complaint under 'Report Financial Fraud'. Attach call screenshots and transaction receipts.\n"
+            "4. **Report to Telecom (Chakshu)**: Report the scammer's phone number on the DoT Sanchar Saathi **Chakshu portal** to get their SIM and device IMEI blacklisted."
+        )
+
+    if "voice" in q or "clone" in q or "deepfake" in q or "family" in q:
+        return (
+            "🎙️ **AI VOICE CLONING & KIN EMERGENCY SCAMS:**\n\n"
+            "Scammers now use 3-second audio clips from social media to clone voices of children, spouses, or relatives and stage fake kidnappings or accidents.\n\n"
+            "**HOW TO DEFEND:**\n"
+            "1. **Code Word Technique**: Agree on a private family security word that only real family members know.\n"
+            "2. **Hang Up and Call Directly**: Always call the relative back directly on their known, saved phone number before sending any money.\n"
+            "3. **DigiRaksha Safe-Voice Registry**: Use the Safe-Voice Registry tab in this app to pre-enrol your family members' voiceprints. When an emergency voice note arrives, verify it instantly."
+        )
+
+    return (
+        "🛡️ **DigiRaksha AI Shield is Active.**\n\n"
+        "I can assist you with:\n"
+        "- **Scam Analysis**: Paste any call transcript, SMS, or WhatsApp forward to evaluate risk.\n"
+        "- **Legal Guidance**: Check your rights under the Information Technology Act and Indian cyber laws.\n"
+        "- **Emergency Protocol**: Get step-by-step guidance on how to freeze bank accounts and file 1930 / FIR reports.\n"
+        "- **Safe-Voice Verification**: Advice on combating AI deepfake voice cloning."
+    )

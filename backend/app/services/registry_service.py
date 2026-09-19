@@ -114,11 +114,14 @@ def verify_voice(
     except ValueError as exc:
         raise EnrollmentError(f"Could not analyse the voice note: {exc}") from exc
 
-    # Enrollments created before the ECAPA upgrade are 52-D and are not
-    # comparable to 192-D probes. Filter them out; if none remain the member
-    # must re-enrol under the current embedding engine.
+    # Enrollments created under an incompatible engine or legacy dummy format
+    # cannot be reliably verified. Filter them out so the user is guided to re-enrol.
     dim = int(len(probe))
-    compatible = [e for e in enrollments if len(e["embedding"]) == dim]
+    compatible = [
+        e for e in enrollments
+        if len(e["embedding"]) == dim
+        and not (len(e["embedding"]) == 52 and len(set(e["embedding"])) <= 1)
+    ]
     if not compatible:
         return {
             "member_id": member.id,

@@ -7,6 +7,7 @@ import { TopBar } from "./components/TopBar";
 import { useI18n } from "./i18n";
 import { routeSegments, useHashRoute } from "./router";
 import { AnalyzePage } from "./pages/AnalyzePage";
+import { AssistantPage } from "./pages/AssistantPage";
 import { CaseDetailPage } from "./pages/CaseDetailPage";
 import { CasesPage } from "./pages/CasesPage";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -16,6 +17,11 @@ import { PhoneIntelPage } from "./pages/PhoneIntelPage";
 import { RegistryPage } from "./pages/RegistryPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { VoiceMatchPage } from "./pages/VoiceMatchPage";
+import { LiveCallPage } from "./pages/LiveCallPage";
+import { BlockchainPage } from "./pages/BlockchainPage";
+import { SdkDocsPage } from "./pages/SdkDocsPage";
+import { MediaAuthPage } from "./pages/MediaAuthPage";
+import { AiAssistantWidget } from "./components/AiAssistantWidget";
 
 type AuthState = "loading" | "offline" | "setup" | "login" | "app";
 
@@ -93,14 +99,29 @@ export default function App() {
   }
 
   if (auth === "setup" || auth === "login") {
-    return <LoginScreen mode={auth} onAuthed={onAuthed} />;
+    return (
+      <>
+        <LoginScreen mode={auth} onAuthed={onAuthed} />
+        <AiAssistantWidget />
+        <ToastStack toasts={toasts} onDismiss={dismiss} />
+      </>
+    );
   }
 
   const [head, ...rest] = routeSegments(route);
   let page;
   switch (head) {
+    case "live-call":
+      page = <LiveCallPage />;
+      break;
+    case "blockchain":
+      page = <BlockchainPage />;
+      break;
     case "analyze":
       page = <AnalyzePage navigate={navigate} />;
+      break;
+    case "assistant":
+      page = <AssistantPage />;
       break;
     case "cases":
       page = rest[0] ? <CaseDetailPage id={rest[0]} navigate={navigate} /> : <CasesPage navigate={navigate} />;
@@ -123,6 +144,13 @@ export default function App() {
     case "settings":
       page = <SettingsPage />;
       break;
+    case "sdk":
+    case "sdk-docs":
+      page = <SdkDocsPage />;
+      break;
+    case "media-auth":
+      page = <MediaAuthPage />;
+      break;
     default:
       page = <DashboardPage />;
   }
@@ -135,6 +163,7 @@ export default function App() {
         <main>{page}</main>
         <footer className="footer">{t("footer.disclaimer")}</footer>
       </div>
+      <AiAssistantWidget />
       <ToastStack toasts={toasts} onDismiss={dismiss} />
     </div>
   );

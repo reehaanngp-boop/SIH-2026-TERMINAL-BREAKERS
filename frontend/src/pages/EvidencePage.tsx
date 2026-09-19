@@ -76,7 +76,7 @@ export function EvidencePage() {
         <div className="card card-flush">
           <div className="faint small" style={{ padding: "8px 12px 2px" }}>{total} {t("dash.stat.evidence")}</div>
           {items.map((e) => (
-            <EvidenceRowFull key={e.id} e={e} push={push} />
+            <EvidenceRowFull key={e.id} e={e} push={push} onRefresh={() => refresh(search, media, risk)} />
           ))}
         </div>
       )}
@@ -86,7 +86,7 @@ export function EvidencePage() {
   );
 }
 
-function EvidenceRowFull({ e, push }: { e: Evidence; push: (m: string, tone?: "info" | "success" | "error") => void }) {
+function EvidenceRowFull({ e, push, onRefresh }: { e: Evidence; push: (m: string, tone?: "info" | "success" | "error") => void; onRefresh?: () => void }) {
   const { t } = useI18n();
   const [verifyResult, setVerifyResult] = useState<string | null>(null);
   const [showLink, setShowLink] = useState(false);
@@ -141,12 +141,12 @@ function EvidenceRowFull({ e, push }: { e: Evidence; push: (m: string, tone?: "i
         <button className="btn btn-secondary btn-sm" onClick={download}>⤓</button>
         <button className="btn btn-danger btn-sm" onClick={remove}>🗑</button>
       </div>
-      {showLink && <LinkCaseModal evidenceId={e.id} onClose={() => setShowLink(false)} />}
+      {showLink && <LinkCaseModal evidenceId={e.id} onClose={() => setShowLink(false)} onLinked={onRefresh} />}
     </div>
   );
 }
 
-function LinkCaseModal({ evidenceId, onClose }: { evidenceId: string; onClose: () => void }) {
+function LinkCaseModal({ evidenceId, onClose, onLinked }: { evidenceId: string; onClose: () => void; onLinked?: () => void }) {
   const { t } = useI18n();
   const { push } = useToasts();
   const [cases, setCases] = useState<CaseListItem[]>([]);
@@ -161,8 +161,8 @@ function LinkCaseModal({ evidenceId, onClose }: { evidenceId: string; onClose: (
     try {
       await api.linkEvidence(evidenceId, c.id);
       push(`Linked to ${c.case_number}`, "success");
+      onLinked?.();
       onClose();
-      window.location.reload();
     } catch (e) {
       push(e instanceof Error ? e.message : "error", "error");
     } finally {

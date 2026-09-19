@@ -38,6 +38,7 @@ export interface DetectorSignal {
   label: string | null;
   detail: string | null;
   metrics: Record<string, unknown>;
+  engine?: string | null;
 }
 
 export interface ReportInfo {
@@ -339,13 +340,56 @@ export interface AnalyticsStats {
   }[];
 }
 
+export interface AssistantChatMessage {
+  id?: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  timestamp?: string;
+  model?: string;
+  suggestions?: string[];
+  error?: string | null;
+}
+
+export interface AssistantStatus {
+  available: boolean;
+  active_model: string;
+  reason: string;
+}
+
+export interface QuickCheckResult {
+  is_scam: boolean;
+  scam_category: string;
+  confidence: number;
+  summary_en: string;
+  summary_hi: string;
+  urgency_level: "critical" | "high" | "medium" | "low";
+  recommended_action: string;
+}
+
+export interface QuickCheckResponse {
+  status: string;
+  model: string;
+  data: QuickCheckResult;
+}
+
+export interface DraftComplaintResponse {
+  status: string;
+  model: string;
+  complaint_markdown: string;
+}
+
 export type NavKey =
+  | "live-call"
   | "dashboard"
   | "analyze"
+  | "media-auth"
+  | "registry"
+  | "blockchain"
+  | "sdk"
+  | "assistant"
   | "cases"
   | "evidence"
   | "voice-match"
   | "phone"
-  | "registry"
   | "history"
   | "settings";

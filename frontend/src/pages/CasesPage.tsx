@@ -62,7 +62,7 @@ export function CasesPage({ navigate }: { navigate: (r: string) => void }) {
         <select className="select" value={status} onChange={(e) => setStatus(e.target.value as CaseStatus | "")}>
           {STATUSES.map((s) => (
             <option key={s || "all"} value={s}>
-              {s ? t(`case.status.${s}`) : t("evidence.filter.type")}
+              {s ? t(`case.status.${s}`) : `${t("field.status")}: all`}
             </option>
           ))}
         </select>
@@ -86,8 +86,8 @@ export function CasesPage({ navigate }: { navigate: (r: string) => void }) {
               <tr>
                 <th>#</th>
                 <th>{t("cases.title")}</th>
-                <th>{t("evidence.filter.type")}</th>
-                <th>{t("case.priority.low")}</th>
+                <th>{t("field.status")}</th>
+                <th>{t("case.priority")}</th>
                 <th>{t("case.officer")}</th>
                 <th>{t("case.victim")}</th>
                 <th className="text-right">{t("dash.stat.evidence")}</th>
@@ -179,11 +179,11 @@ function NewCaseModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
       {err && <div className="error-banner">{err}</div>}
       <label className="field-label">* {t("cases.title")}</label>
       <input className="input" value={form.title} onChange={set("title")} autoFocus />
-      <label className="field-label">{t("result.redflags")}</label>
+      <label className="field-label">{t("field.description")}</label>
       <textarea className="textarea" value={form.description} onChange={set("description")} rows={3} />
       <div className="form-grid">
         <div>
-          <label className="field-label">{t("case.priority.low")}</label>
+          <label className="field-label">{t("case.priority")}</label>
           <select className="select" value={form.priority} onChange={set("priority")}>
             {PRIORITIES.map((p) => (
               <option key={p} value={p}>
@@ -195,13 +195,13 @@ function NewCaseModal({ onClose, onCreated }: { onClose: () => void; onCreated: 
       </div>
       <label className="field-label">{t("case.victim")}</label>
       <div className="form-grid">
-        <input className="input" placeholder="Name" value={form.victim_name} onChange={set("victim_name")} />
-        <input className="input" placeholder="Phone" value={form.victim_phone} onChange={set("victim_phone")} />
+        <input className="input" placeholder={t("field.name")} value={form.victim_name} onChange={set("victim_name")} />
+        <input className="input" placeholder={t("field.phone")} value={form.victim_phone} onChange={set("victim_phone")} />
       </div>
       <label className="field-label">{t("case.suspect")}</label>
       <div className="form-grid">
-        <input className="input" placeholder="Name" value={form.suspect_name} onChange={set("suspect_name")} />
-        <input className="input" placeholder="Phone" value={form.suspect_phone} onChange={set("suspect_phone")} />
+        <input className="input" placeholder={t("field.name")} value={form.suspect_name} onChange={set("suspect_name")} />
+        <input className="input" placeholder={t("field.phone")} value={form.suspect_phone} onChange={set("suspect_phone")} />
       </div>
       <div className="row" style={{ marginTop: 16, justifyContent: "flex-end" }}>
         <button className="btn btn-ghost" onClick={onClose}>

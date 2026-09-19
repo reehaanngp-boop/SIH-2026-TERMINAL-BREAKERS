@@ -1,0 +1,29 @@
+name: Auto-Deploy to Hugging Face Spaces
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  sync-to-huggingface:
+    name: Sync Repository to Hugging Face Space
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to Hugging Face Spaces
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE: ${{ secrets.HF_SPACE }}
+        run: |
+          if [ -z "$HF_TOKEN" ] || [ -z "$HF_SPACE" ]; then
+            echo "⚠️ HF_TOKEN or HF_SPACE secret is not configured in GitHub Secrets."
+            echo "To enable auto-deploy, add HF_TOKEN and HF_SPACE in Repo Settings -> Secrets."
+            exit 0
+          fi
+          echo "🚀 Pushing latest changes to Hugging Face Spaces: $HF_SPACE"
+          git push --force "https://user:$HF_TOKEN@huggingface.co/spaces/$HF_SPACE" main

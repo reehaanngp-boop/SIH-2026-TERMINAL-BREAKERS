@@ -49,8 +49,14 @@ class VideoDeepfakeDetector(BaseDetector):
         if self._cascade is not None or self._cascade_error:
             return self._cascade
         try:
+            # OpenCV 5.0 removed CascadeClassifier from the top-level namespace.
+            # Try the legacy class path; fall back to None on AttributeError.
+            cascade_cls = getattr(cv2, "CascadeClassifier", None)
+            if cascade_cls is None:
+                self._cascade_error = "CascadeClassifier removed in OpenCV 5 (heuristics-only mode)"
+                return None
             cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-            self._cascade = cv2.CascadeClassifier(cascade_path)
+            self._cascade = cascade_cls(cascade_path)
             if self._cascade.empty():
                 self._cascade_error = "cascade file could not be loaded"
                 self._cascade = None
@@ -87,7 +93,8 @@ class VideoDeepfakeDetector(BaseDetector):
         return self._ensure_mesonet() is not None
 
     def available(self) -> bool:
-        return self._ensure_cascade() is not None
+        """Always available — temporal heuristics need no cascade."""
+        return True
 
     def describe(self) -> dict[str, Any]:
         d = super().describe()
@@ -110,14 +117,10 @@ class VideoDeepfakeDetector(BaseDetector):
         return rgb.astype(np.float32) / 255.0
 
     def analyze(self, video_path: str) -> dict[str, Any]:
+        # Ensure cascade is attempted (best-effort face detection)
         cascade = self._ensure_cascade()
-        if cascade is None:
-            return self._result(
-                "unavailable",
-                detail=f"Face detector unavailable: {self._cascade_error}",
-            )
         mesonet = self._ensure_mesonet()
-        meso_engine = "mesonet" if mesonet is not None else "unavailable"
+        meso_engine = "mesonet" if mesonet is not None else "heuristics"
         score_crop = None
         if mesonet is not None:
             from app.detectors.video.mesonet_model import score_crop  # lazy torch import
@@ -141,12 +144,15 @@ class VideoDeepfakeDetector(BaseDetector):
 
         try:
             while read < total:
+                if frame_no % interval != 0:
+                    if not cap.grab():
+                        break
+                    frame_no += 1
+                    continue
+
                 ok, frame = cap.read()
                 if not ok:
                     break
-                if frame_no % interval != 0:
-                    frame_no += 1
-                    continue
                 frame_no += 1
                 read += 1
                 if len(frame_metrics) >= max_frames:
@@ -154,15 +160,24 @@ class VideoDeepfakeDetector(BaseDetector):
 
                 gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
                 h, w = gray.shape
-                faces = cascade.detectMultiScale(
-                    gray,
-                    scaleFactor=1.1,
-                    minNeighbors=5,
-                    minSize=(
-                        max(20, int(w * _FACE_MIN_FRACTION)),
-                        max(20, int(h * _FACE_MIN_FRACTION)),
-                    ),
-                )
+
+                # Face detection — skipped if cascade unavailable (OpenCV 5+).
+                if cascade is not None:
+                    faces = cascade.detectMultiScale(
+                        gray,
+                        scaleFactor=1.1,
+                        minNeighbors=5,
+                        minSize=(
+                            max(20, int(w * _FACE_MIN_FRACTION)),
+                            max(20, int(h * _FACE_MIN_FRACTION)),
+                        ),
+                    )
+                else:
+                    # No face detector: treat centre crop as the ROI.
+                    cw, ch = w // 3, h // 3
+                    x0, y0 = cw, ch
+                    faces = [(x0, y0, cw, ch)]
+
                 if len(faces) == 0:
                     continue
 
@@ -220,7 +235,7 @@ class VideoDeepfakeDetector(BaseDetector):
         }
         if len(diffs):
             metrics["mean_frame_diff"] = round(float(diffs.mean()), 4)
-            metrics["frame_diff_cv"] = round(float(diffs.std() / (diffs.mean() + 1e-6)), 3)
+            metrics["frame_diff_cv"] = round(float(diffs.std() / (diffs.mean() + 0.01)), 3)
             metrics["frame_diff_range"] = round(float(diffs.max() - diffs.min()), 4)
 
         # MesoNet per-frame scores (only when the converted weights are present).

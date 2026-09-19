@@ -1,60 +1,67 @@
-import type { RiskLevel } from "../types";
+/** Clean, minimal RiskGauge */
+export function RiskGauge({ score, size = 160 }: { score: number; size?: number }) {
+  const pct = Math.min(Math.max(score, 0), 100) / 100;
+  const r = 54;
+  const cx = 80;
+  const cy = 80;
+  const circ = 2 * Math.PI * r;
+  const arc = pct * circ * 0.75; // 270 degree gauge
+  const gap = circ - arc;
 
-/** Semi-circular SVG gauge (0-100) with a colour per risk band. */
-export function RiskGauge({ score, level }: { score: number; level: RiskLevel }) {
-  const startAngle = -210; // degrees
-  const endAngle = 30;
-  const value = Math.max(0, Math.min(100, score));
-  const pointerAngle = startAngle + (value / 100) * (endAngle - startAngle);
+  const color =
+    pct >= 0.7 ? "var(--rose)" :
+    pct >= 0.4 ? "var(--amber)" :
+    "var(--emerald)";
 
-  const color = level === "high" ? "#e5484d" : level === "medium" ? "#f5a623" : "#2fbf71";
-  const R = 80;
-  const cx = 100;
-  const cy = 100;
-  const polar = (deg: number) => {
-    const rad = (deg * Math.PI) / 180;
-    return [cx + R * Math.cos(rad), cy + R * Math.sin(rad)] as const;
-  };
-
-  // Background arc
-  const [ax0, ay0] = polar(startAngle);
-  const [ax1, ay1] = polar(endAngle);
-  const large = endAngle - startAngle > 180 ? 1 : 0;
-
-  // Colored arc up to the score
-  const [px0, py0] = polar(startAngle);
-  const [px1, py1] = polar(pointerAngle);
-  const plarge = pointerAngle - startAngle > 180 ? 1 : 0;
-
-  // Pointer line
-  const [q0x, q0y] = polar(pointerAngle);
-  const tipX = cx + (R + 12) * Math.cos((pointerAngle * Math.PI) / 180);
-  const tipY = cy + (R + 12) * Math.sin((pointerAngle * Math.PI) / 180);
+  const label =
+    pct >= 0.7 ? "HIGH RISK" :
+    pct >= 0.4 ? "MEDIUM RISK" :
+    "LOW RISK";
 
   return (
-    <div className="gauge">
-      <svg viewBox="0 0 200 120" role="img" aria-label={`risk ${score} of 100`}>
-        <path
-          d={`M ${ax0} ${ay0} A ${R} ${R} 0 ${large} 1 ${ax1} ${ay1}`}
-          fill="none"
-          stroke="#e6e9ef"
-          strokeWidth="14"
-          strokeLinecap="round"
-        />
-        {value > 0.5 && (
-          <path
-            d={`M ${px0} ${py0} A ${R} ${R} 0 ${plarge} 1 ${px1} ${py1}`}
+    <div
+      className="risk-gauge"
+      role="meter"
+      aria-valuenow={Math.round(score)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={`Risk score: ${Math.round(score)} out of 100, ${label}`}
+    >
+      <div style={{ position: "relative", width: size, height: size }}>
+        <svg width={size} height={size} viewBox="0 0 160 160" aria-hidden="true">
+          {/* Track */}
+          <circle
+            r={r} cx={cx} cy={cy}
             fill="none"
-            stroke={color}
-            strokeWidth="14"
+            stroke="var(--bg-3)"
+            strokeWidth={12}
+            strokeDasharray={`${circ * 0.75} ${circ * 0.25}`}
+            strokeDashoffset={circ * 0.125}
+            transform={`rotate(135 ${cx} ${cy})`}
             strokeLinecap="round"
           />
-        )}
-        <line x1={q0x} y1={q0y} x2={tipX} y2={tipY} stroke={color} strokeWidth="4" strokeLinecap="round" />
-        <circle cx={cx} cy={cy} r="6" fill={color} />
-      </svg>
-      <div className="gauge-value" style={{ color }}>
-        {Math.round(value)}
+          {/* Fill */}
+          <circle
+            r={r} cx={cx} cy={cy}
+            fill="none"
+            stroke={color}
+            strokeWidth={12}
+            strokeDasharray={`${arc} ${gap + circ * 0.25}`}
+            strokeDashoffset={circ * 0.125}
+            transform={`rotate(135 ${cx} ${cy})`}
+            strokeLinecap="round"
+            style={{ transition: "stroke-dasharray 0.8s cubic-bezier(0.16,1,0.3,1), stroke 0.4s" }}
+          />
+        </svg>
+        {/* Center text */}
+        <div style={{
+          position: "absolute", inset: 0,
+          display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+        }}>
+          <span className="risk-score-big" style={{ color }}>{Math.round(score)}</span>
+          <span className="risk-label">{label}</span>
+        </div>
       </div>
     </div>
   );

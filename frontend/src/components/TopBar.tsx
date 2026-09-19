@@ -21,16 +21,14 @@ export function TopBar({
       <div className="topbar-actions">
         <div className="topbar-officer">
           <span className="officer-dot" />
-          <span>
-            {t("topbar.officer")}: <b>{officerName || "—"}</b>
-          </span>
+          <span>{officerName || "—"}</span>
         </div>
         <button
           className="btn btn-ghost btn-sm"
           onClick={() => setLang(lang === "en" ? "hi" : "en")}
           aria-label="Toggle language"
         >
-          {lang === "en" ? "हिंदी" : "English"}
+          {lang === "en" ? "हिंदी" : "EN"}
         </button>
         <button className="btn btn-secondary btn-sm" onClick={onLock}>
           {t("btn.lock")}

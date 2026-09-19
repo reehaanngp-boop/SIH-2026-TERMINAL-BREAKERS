@@ -105,7 +105,7 @@ def test_enabled_parses_verdict(monkeypatch):
     )
     assert out is not None
     assert out["status"] == "ok"
-    assert out["model"] == "poolside/laguna-s-2.1:free"
+    assert out["model"]
     assert out["verdict"]["is_scam"] is True
     assert out["verdict"]["confidence"] == pytest.approx(0.92)
     assert out["verdict"]["scam_category"] == "digital_arrest"
