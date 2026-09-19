@@ -86,9 +86,9 @@ export function SettingsPage() {
     setApiBase(backendUrl);
     try {
       const res = await api.getMeta();
-      if (res && res.name) {
+      if (res && (res.app || res.version)) {
         setBackendStatus("ok");
-        push(`Connected to ${res.name} v${res.version} successfully!`, "success");
+        push(`Connected to ${res.app || "DigiRaksha"} v${res.version} successfully!`, "success");
       } else {
         setBackendStatus("err");
         push("Connected, but unexpected payload returned.", "error");
