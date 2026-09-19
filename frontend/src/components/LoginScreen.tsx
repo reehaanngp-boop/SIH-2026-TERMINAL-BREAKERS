@@ -14,6 +14,7 @@ export function LoginScreen({
   const [pin, setPin] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [showVideos, setShowVideos] = useState(false);
 
   const submit = async () => {
     if (busy) return;
@@ -96,6 +97,54 @@ export function LoginScreen({
             mode === "setup" ? t("btn.setup") : t("btn.unlock")
           )}
         </button>
+
+        <div style={{ marginTop: 16, borderTop: "1px solid var(--border)", paddingTop: 14 }}>
+          <button
+            type="button"
+            className="btn btn-outline btn-block"
+            onClick={() => setShowVideos(!showVideos)}
+            style={{ fontSize: "0.85rem", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+          >
+            <span>🎬</span>
+            <span>{showVideos ? "Hide Platform Videos" : "Watch Platform Walkthrough & Intro"}</span>
+          </button>
+        </div>
+
+        {showVideos && (
+          <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ background: "rgba(15, 23, 42, 0.7)", borderRadius: 8, padding: 12, border: "1px solid var(--border)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <strong style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>⚡ Platform Intro (18s)</strong>
+                <span style={{ fontSize: "0.7rem", color: "#38bdf8", background: "rgba(56, 189, 248, 0.15)", padding: "1px 6px", borderRadius: 4 }}>18 SEC</span>
+              </div>
+              <video
+                controls
+                poster="/videos/digiraksha_intro.jpg"
+                preload="metadata"
+                style={{ width: "100%", borderRadius: 6, background: "#050914", aspectRatio: "16/9", objectFit: "cover" }}
+              >
+                <source src="/videos/digiraksha_intro.mp4" type="video/mp4" />
+                Your browser does not support HTML5 video.
+              </video>
+            </div>
+
+            <div style={{ background: "rgba(15, 23, 42, 0.7)", borderRadius: 8, padding: 12, border: "1px solid var(--border)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <strong style={{ fontSize: "0.85rem", color: "var(--text-1)" }}>🖥️ Full 6-Screen Tour (60s)</strong>
+                <span style={{ fontSize: "0.7rem", color: "#10b981", background: "rgba(16, 185, 129, 0.15)", padding: "1px 6px", borderRadius: 4 }}>60 SEC</span>
+              </div>
+              <video
+                controls
+                poster="/videos/digiraksha_walkthrough.jpg"
+                preload="metadata"
+                style={{ width: "100%", borderRadius: 6, background: "#050914", aspectRatio: "16/9", objectFit: "cover" }}
+              >
+                <source src="/videos/digiraksha_walkthrough.mp4" type="video/mp4" />
+                Your browser does not support HTML5 video.
+              </video>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

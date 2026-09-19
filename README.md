@@ -14,7 +14,18 @@
 
 *Real-time voice stream analysis • Dhwani multilingual ONNX foundation • Neural vocoder DSP forensics • Dynamic risk escalation • Immutable blockchain chain of custody • Enterprise banking SDK*
 
-[Quick Start](#-quick-start) • [Live Call Sentinel](#1-🎙️-live-call-sentinel-real-time-voip--telephony-engine) • [AI Forensics Engine](#2-🔬-multi-layer-voice-authenticity-analysis) • [Blockchain Audit](#4-⛓️-immutable-blockchain-audit-trail--sec-65b-bsa-forensics) • [Banking SDK](#5-💳-enterprise-banking-sdk--pre-action-interceptor) • [Testing Datasets](#-test-datasets--evaluation-suite)
+</div>
+
+---
+
+## 🎬 Platform Videos & Walkthroughs
+
+<div align="center">
+
+| ⚡ Quick Platform Intro (18s) | 🖥️ Full 6-Screen Walkthrough (60s) |
+|:---:|:---:|
+| [![DigiRaksha Intro](frontend/public/videos/digiraksha_intro.jpg)](frontend/public/videos/digiraksha_intro.mp4) | [![DigiRaksha Full Walkthrough](frontend/public/videos/digiraksha_walkthrough.jpg)](frontend/public/videos/digiraksha_walkthrough.mp4) |
+| **[▶️ Watch Platform Intro (18s)](frontend/public/videos/digiraksha_intro.mp4)**<br/>*High-impact summary of &lt;30ms VoIP interception, vocoder DSP, and BSA Sec 65B* | **[▶️ Watch Full Walkthrough (60s)](frontend/public/videos/digiraksha_walkthrough.mp4)**<br/>*Complete real-UI tour of Dashboard, Live Call, Forensics, Media Auth, SDK & Blockchain* |
 
 </div>
 
