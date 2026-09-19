@@ -1,3 +1,17 @@
+---
+title: Digiraksha Api
+emoji: 🛡️
+colorFrom: indigo
+colorTo: purple
+sdk: gradio
+sdk_version: 6.28.0
+python_version: '3.12'
+app_file: app.py
+pinned: false
+license: mit
+short_description: DigiRaksha AI Sentinel Backend API
+---
+
 <div align="center">
 
 # 🛡️ DigiRaksha
