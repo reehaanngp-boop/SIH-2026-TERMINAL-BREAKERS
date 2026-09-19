@@ -1,33 +1,20 @@
----
-title: Digiraksha Api
-emoji: 🛡️
-colorFrom: indigo
-colorTo: purple
-sdk: gradio
-sdk_version: 6.28.0
-python_version: '3.12'
-app_file: app.py
-pinned: false
-license: mit
-short_description: DigiRaksha AI Sentinel Backend API
----
-
 <div align="center">
 
 # 🛡️ DigiRaksha
 ### AI-Powered Real-Time Detection & Prevention of Voice Cloning Impersonation Attacks
 
-[![SIH Problem ID: 26104](https://img.shields.io/badge/SIH%202026-Problem%20ID%2026104-crimson.svg)](#sih-2026-alignment)
-[![Theme: Blockchain & Cybersecurity](https://img.shields.io/badge/Theme-Blockchain%20%26%20Cybersecurity-orange.svg)](#sih-2026-alignment)
-[![Organization: AICTE Cyber Security Cell](https://img.shields.io/badge/Organization-AICTE%20Cyber%20Security%20Cell-blue.svg)](#sih-2026-alignment)
-[![Python 3.12](https://img.shields.io/badge/Python-3.12.8-blue.svg)](https://www.python.org/)
+[![SIH 2026 Problem ID: 26104](https://img.shields.io/badge/SIH%202026-Problem%20ID%2026104-crimson.svg)](#-sih-2026-alignment-problem-statement-26104)
+[![Theme: Blockchain & Cybersecurity](https://img.shields.io/badge/Theme-Blockchain%20%26%20Cybersecurity-orange.svg)](#-sih-2026-alignment-problem-statement-26104)
+[![Organization: AICTE Cyber Security Cell](https://img.shields.io/badge/Organization-AICTE%20Cyber%20Security%20Cell-blue.svg)](#-sih-2026-alignment-problem-statement-26104)
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-009688.svg)](https://fastapi.tiangolo.com/)
 [![React 19](https://img.shields.io/badge/React-19.0-61DAFB.svg)](https://react.dev/)
-[![Tests](https://img.shields.io/badge/Tests-Passed-brightgreen.svg)](#testing)
+[![Cloudflare Pages](https://img.shields.io/badge/Deployed-Cloudflare%20Pages-F38020.svg)](https://sih-2026-terminal-breakers.pages.dev)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-*Real-time voice stream analysis • Granular neural vocoder forensics • Dynamic risk escalation • Immutable blockchain chain of custody • Enterprise banking SDK*
+*Real-time voice stream analysis • Dhwani multilingual ONNX foundation • Neural vocoder DSP forensics • Dynamic risk escalation • Immutable blockchain chain of custody • Enterprise banking SDK*
 
-[Live Call Sentinel](#-live-call-sentinel) • [Acoustic & Vocoder Forensics](#-multi-layer-voice-authenticity-analysis) • [Blockchain Audit Ledger](#-blockchain-audit-trail--forensics) • [Banking SDK](#-enterprise-banking-sdk) • [Quick Start](#quick-start)
+[Quick Start](#-quick-start) • [Live Call Sentinel](#1-🎙️-live-call-sentinel-real-time-voip--telephony-engine) • [AI Forensics Engine](#2-🔬-multi-layer-voice-authenticity-analysis) • [Blockchain Audit](#4-⛓️-immutable-blockchain-audit-trail--sec-65b-bsa-forensics) • [Banking SDK](#5-💳-enterprise-banking-sdk--pre-action-interceptor) • [Testing Datasets](#-test-datasets--evaluation-suite)
 
 </div>
 
@@ -44,14 +31,14 @@ short_description: DigiRaksha AI Sentinel Backend API
 | **Theme** | Blockchain & Cybersecurity |
 
 ### The Threat
-Recent advancements in generative AI and neural speech synthesis (XTTS-v2, ElevenLabs, VITS, Bark, OpenVoice) allow threat actors to clone human voices with under 3 seconds of audio. Attackers target CXOs, government officials, defense personnel, and high-net-worth individuals over VoIP and cellular networks to authorize fraudulent wire transfers, extract sensitive credentials, or orchestrate high-pressure "Digital Arrest" extortion schemes.
+Recent advancements in generative AI and zero-shot neural speech synthesis (XTTS-v2, ElevenLabs, VITS, Bark, OpenVoice) allow threat actors to clone human voices with under 3 seconds of audio. Attackers target CXOs, government officials, defense personnel, and senior citizens over VoIP and cellular networks to authorize fraudulent wire transfers, extract sensitive credentials, or orchestrate high-pressure **"Digital Arrest"** extortion schemes.
 
 ### The DigiRaksha Solution
-DigiRaksha is an **end-to-end, production-grade security framework** that intercepts live or recorded voice streams in real time, extracts deep acoustic, vocoder, and prosodic artifacts, computes a **Dynamic Impersonation Risk Score**, issues immediate pre-action alerts, and notarizes all evidence in a **tamper-proof cryptographic blockchain ledger** (admissible under Section 65B of the Indian Evidence Act / BSA 2023).
+DigiRaksha is an **end-to-end, production-grade security platform** that intercepts live telephony and recorded audio streams in real time. It extracts deep acoustic, vocoder, and prosodic artifacts, computes a **Dynamic Impersonation Risk Score**, issues immediate pre-action warnings, and notarizes all evidence in a **tamper-proof cryptographic blockchain ledger** (admissible under Section 65B of the Indian Evidence Act / Bharatiya Sakshya Adhiniyam 2023).
 
 ---
 
-## ⚡ Key Capabilities
+## ⚡ System Architecture
 
 ```
                   ┌─────────────────────────────────────────────────────────┐
@@ -59,168 +46,162 @@ DigiRaksha is an **end-to-end, production-grade security framework** that interc
                   └────────────────────────────┬────────────────────────────┘
                                                │
                                                ▼
-         ┌──────────────────────────────────────────────────────────────────────────┐
-         │                  MULTI-LAYER VOICE AUTHENTICITY ENGINE                   │
-         ├─────────────────────────────┬─────────────────────────────┬──────────────┤
-         │  1. Vocoder & Spectral DSP  │ 2. Prosody & Micro-Tremors  │ 3. Deep ASR  │
-         │  • Neural Cutoff (~7.5kHz)  │ • F0 pitch contour std-dev  │ • Multilingual
-         │  • Phase Incoherence        │ • Syllable pause unnatural  │   Whisper STT│
-         │  • Spectral Flatness & Flux │ • Synthetic monotony        │ • Scam NLP   │
-         │  • G.711 Telephony Filter   │ • Micro-tremor deficiency   │   Classifier │
-         └─────────────────────────────┴─────────────────────────────┴──────────────┘
+          ┌──────────────────────────────────────────────────────────────────────────┐
+          │                  MULTI-LAYER VOICE AUTHENTICITY ENGINE                   │
+          ├─────────────────────────────┬─────────────────────────────┬──────────────┤
+          │  1. Dhwani Multilingual AI  │ 2. Vocoder & Spectral DSP   │ 3. Prosody   │
+          │  • 1.26 GB ONNX Foundation  │ • Neural Cutoff (~7.5kHz)   │ • F0 contour │
+          │  • 5 Indian Languages       │ • Phase Incoherence         │ • Jitter &   │
+          │  • Latent feature embeddings│ • Spectral Flatness & Flux  │   Shimmer    │
+          ├─────────────────────────────┴─────────────────────────────┴──────────────┤
+          │  4. Multilingual Whisper ASR + NLP Scam Classifier (Digital Arrest / OTP)│
+          └────────────────────────────────────┬─────────────────────────────────────┘
                                                │
                                                ▼
-         ┌──────────────────────────────────────────────────────────────────────────┐
-         │                  DYNAMIC IMPERSONATION RISK CALCULATOR                   │
-         │              Sliding-window temporal fusion (<30ms latency)              │
-         │              Thresholds: Low (<40) | Medium (40-65) | High (>65)         │
-         └─────────────────────────────┬─────────────────────────────┬──────────────┘
-                                       │                             │
-                        (If Risk > 65) │                             │ (Every Session)
-                                       ▼                             ▼
-       ┌───────────────────────────────────────────┐  ┌─────────────────────────────┐
-       │   PRE-ACTION WIRE-TRANSFER INTERCEPTOR    │  │ CRYPTOGRAPHIC BLOCKCHAIN    │
-       │   Enterprise Banking SDK blocks/quarantines│  │ AUDIT TRAIL                 │
-       │   unauthorized wire transfers (₹5L+/$50K) │  │ • SHA-256 Merkle Tree       │
-       │   and mandates step-up out-of-band auth   │  │ • DR-VOICE-CERT Generation  │
-       └───────────────────────────────────────────┘  │ • Sec 65B BSA Admissibility │
-                                                      └─────────────────────────────┘
+          ┌──────────────────────────────────────────────────────────────────────────┐
+          │                  DYNAMIC IMPERSONATION RISK CALCULATOR                   │
+          │              Sliding-window temporal fusion (<30ms latency)              │
+          │              Thresholds: Low (<40) | Medium (40-65) | High (>65)         │
+          └─────────────────────────────┬─────────────────────────────┬──────────────┘
+                                        │                             │
+                         (If Risk > 65) │                             │ (Every Session)
+                                        ▼                             ▼
+        ┌───────────────────────────────────────────┐  ┌─────────────────────────────┐
+        │   PRE-ACTION WIRE-TRANSFER INTERCEPTOR    │  │ CRYPTOGRAPHIC BLOCKCHAIN    │
+        │   Enterprise Banking SDK blocks/quarantines│  │ AUDIT TRAIL                 │
+        │   unauthorized wire transfers (₹5L+/$50K) │  │ • SHA-256 Merkle Tree       │
+        │   and mandates step-up out-of-band auth   │  │ • DR-VOICE-CERT Generation  │
+        └───────────────────────────────────────────┘  │ • Sec 65B BSA Admissibility │
+                                                       └─────────────────────────────┘
 ```
-
-### 1. 🎙️ Live Call Sentinel (Real-Time VoIP / Telephony Engine)
-- **Sub-30ms Window Latency**: Highly-vectorized FFT autocorrelation and sliding STFT windows for zero-lag streaming audio processing.
-- **WebSocket Streaming**: Continuous chunk ingestion over `/api/v1/stream/live-call` supporting PCM16, WebM, and WAV streams.
-- **Threat Simulator**: Built-in testbed to simulate high-pressure CEO voice clones, benign family conversations, and Digital Arrest impersonations.
-- **Real-Time Oscilloscope & Gauge HUD**: Live waveform canvas with dynamic vocoder anomaly meters and pre-action alert banners.
-
-### 2. 🔬 Multi-Layer Voice Authenticity Analysis
-- **Neural Vocoder Phase Incoherence**: Detects vocoder synthesis artifacts (HiFi-GAN, WaveGlow, MelGAN) where synthesized phase alignment deviates from natural human vocal tract physics.
-- **High-Frequency Spectral Cutoff**: Neural TTS architectures frequently drop or artificially attenuate harmonic energy above 7.5 kHz – 8 kHz.
-- **Spectral Flatness & Energy Flux**: Analyzes tonal purity vs. noise-burst distribution across critical speech bands.
-- **Prosody & Behavioral Analysis**: Models speech rhythm, pitch contours (F0), jitter, shimmer, and micro-pauses to differentiate organic human emotion from flat or over-smoothed neural models.
-- **Telephony Compensation**: Automatically adjusts for G.711, AMR-WB, and Opus bandwidth limitations so telecom codecs do not cause false positives.
-
-### 3. ⛓️ Blockchain Audit Trail & Sec 65B Compliance
-- **Cryptographic Merkle Chaining**: Every audio inspection creates an immutable block linked with SHA-256 parent hashes and block signatures.
-- **BSA 2023 / Section 65B Indian Evidence Act**: Automatically generates a verifiable tamper-proof certificate (`DR-VOICE-CERT-...`) containing audio SHA-256 fingerprints, risk scores, forensic signals, and timestamp notarization.
-- **Public Verification API**: Anyone or any banking portal can verify a certificate via `/api/v1/blockchain/verify/{certificate_id}`.
-
-### 4. 💳 Enterprise Banking & Telephony SDK
-- **`DigiRakshaBankingGate`**: Python and TypeScript SDK for core banking systems (Finacle, TCS BaNCS) and contact centers (Genesys, Cisco, Twilio).
-- **Wire-Transfer Interception**: Pre-action gate prevents funds release on telephonic or video confirmations until the voice stream's impersonation risk is below threshold.
-- **Step-Up Authentication**: Generates out-of-band biometric challenge codes when a high risk score is detected.
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. One-Click Launch (Windows)
-Double-click `DigiRaksha.bat` from the project root:
-```cmd
-DigiRaksha.bat
+DigiRaksha provides **two dedicated standalone runners** with **zero configuration** required. Both runners automatically check for all required dependencies and missing AI models, downloading them on first launch if necessary.
+
+### 🌐 Mode 1: Online Collaboration Mode (Recommended for Teams)
+Run the AI backend locally and expose it securely to your entire team via Cloudflare:
+
+```text
+Double-click: DigiRaksha_Online.exe   (or run: DigiRaksha_Collab.bat)
 ```
-*Automatically checks the environment, boots the FastAPI backend, and opens `http://127.0.0.1:8000` in your default browser.*
 
-### 2. Manual Start (Backend + Frontend)
+**What it does:**
+1. Verifies Python environment and auto-downloads missing foundation AI models.
+2. Auto-downloads `cloudflared.exe` if not present on your system.
+3. Boots the FastAPI backend on `http://127.0.0.1:8000`.
+4. Establishes a secure Cloudflare Tunnel (`https://xxxx.trycloudflare.com`).
+5. **Automatically opens the live Cloudflare Pages web app:**  
+   👉 [`https://sih-2026-terminal-breakers.pages.dev`](https://sih-2026-terminal-breakers.pages.dev)
+6. Allows you and your teammates worldwide to collaborate simultaneously on a single shared backend!
 
-**Backend:**
-```cmd
+---
+
+### 💻 Mode 2: 100% Offline Standalone Mode
+Run completely offline on your PC with zero internet connection:
+
+```text
+Double-click: DigiRaksha_Offline.exe   (or run: DigiRaksha.bat)
+```
+
+**What it does:**
+1. Checks that all local models and the pre-built React interface are ready.
+2. Starts the local FastAPI server on `http://127.0.0.1:8000`.
+3. **Automatically launches your browser** directly to `http://127.0.0.1:8000`.
+4. Smooth startup retry loop ensures zero "Network Error" banners during model warm-up.
+
+---
+
+### 🛠️ Mode 3: Developer Setup
+If you want to contribute, modify code, or train models locally:
+
+```powershell
+# 1. Clone repository
+git clone https://github.com/reehaanngp-boop/SIH-2026-TERMINAL-BREAKERS.git
+cd SIH-2026-TERMINAL-BREAKERS
+
+# 2. Automated one-click dev setup (Python venv, PyTorch, Node.js packages)
+powershell -ExecutionPolicy Bypass -File setup_dev.ps1
+
+# 3. Start development servers
+# Terminal 1 (Backend):
 cd backend
-.venv\Scripts\activate
-uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
+.venv\Scripts\python.exe -m app.main
 
-**Frontend (Development hot-reload):**
-```cmd
+# Terminal 2 (Frontend):
 cd frontend
 npm run dev
 ```
 
-**Production Frontend Build:**
-```cmd
-cd frontend
-npm run build
-```
-*(Compiles directly into `backend/app/static/` for zero-configuration standalone production deployment).*
+---
+
+## 🔍 Core Detection Capabilities
+
+### 1. 🎙️ Live Call Sentinel (Real-Time VoIP / Telephony Engine)
+- **Sub-30ms Window Latency**: Vectorized FFT autocorrelation and sliding STFT windows for real-time streaming audio analysis.
+- **WebSocket Streaming**: Continuous chunk ingestion over `/api/v1/stream/live-call` supporting PCM16, WebM, and WAV formats.
+- **Threat Simulator**: Built-in testbed to simulate high-pressure CEO voice clones, benign family calls, and Digital Arrest police impersonations.
+- **Real-Time Oscilloscope & HUD**: Live audio waveform canvas with dynamic vocoder anomaly meters and pre-action alert banners.
+
+### 2. 🔬 Multi-Layer Voice Authenticity Analysis
+- **Dhwani Multilingual Foundation Model**: 1.26 GB deep ONNX neural network trained specifically on Indian voice deepfakes across 5 languages (English, Hindi, Tamil, Telugu, Malayalam).
+- **Neural Vocoder Phase Incoherence**: Detects vocoder synthesis artifacts (HiFi-GAN, WaveGlow, MelGAN) where synthesized phase alignment deviates from human vocal tract physics.
+- **High-Frequency Spectral Cutoff**: Neural TTS models typically exhibit unnatural energy attenuation or steep cutoffs above 7.5 kHz – 8 kHz.
+- **Spectral Flatness & Energy Flux**: Analyzes tonal purity vs. noise-burst distribution across critical speech bands.
+- **Prosody & Behavioral Analysis**: Models speech rhythm, pitch contours (F0), jitter, shimmer, and micro-pauses to differentiate organic human emotion from flat neural models.
+
+### 3. 🛡️ NLP Scam Intent & Digital Arrest Detection
+- **Multilingual Whisper STT**: Transcribes English, Hindi, and regional speech into text in real time.
+- **Scam Classifier**: Trained on verified Indian cybercrime transcripts (Digital Arrest, fake CBI/TRAI notices, courier drug parcels, unauthorized OTP requests).
+- **Urgency & Coercion Scoring**: Identifies coercive language designed to cause panic and urgency.
+
+### 4. ⛓️ Immutable Blockchain Audit Trail (Sec 65B BSA Forensics)
+- **Cryptographic Chain of Custody**: Every analysis session is hashed using SHA-256 and appended to a tamper-proof cryptographic ledger.
+- **Court-Admissible Certificates**: Generates **`DR-VOICE-CERT`** forensic certificates containing:
+  - Cryptographic audio digest (SHA-256)
+  - Detailed vocoder anomaly metrics
+  - Timestamped consensus verdict
+  - Certificate compliance with **Section 65B of Bharatiya Sakshya Adhiniyam (BSA 2023) / Indian Evidence Act**.
+
+### 5. 💳 Enterprise Banking SDK & Pre-Action Interceptor
+- **High-Value Wire Transfer Protection**: Intercepts high-value transactions (₹5,00,000+ / $50,000+) requested over voice calls.
+- **Automated Quarantine**: If voice cloning risk exceeds threshold (>65), the transaction is automatically quarantined, mandating out-of-band multi-factor authentication before funds can be released.
+
+---
+
+## 🧪 Test Datasets & Evaluation Suite
+
+DigiRaksha includes a comprehensive test suite of verified genuine and cloned samples in `data/samples/` and `testing set/`:
+
+| File | Scenario | Expected Verdict | Primary Indicators |
+|:---|:---|:---:|:---|
+| `scam_digital_arrest.wav` | Fake Police / CBI extortion call | **HIGH RISK (92%)** | High scam intent, coercive phrasing, unnatural vocoder flux |
+| `scam_courier.wav` | Fake FedEx / customs parcel scam | **HIGH RISK (88%)** | Passport fraud claim, illegal parcel script, neural TTS markers |
+| `scam_otp.wav` | Bank KYC update / OTP extraction | **HIGH RISK (94%)** | Urgent account suspension claim, OTP request |
+| `benign_family.wav` | Genuine family conversation | **LOW RISK (8%)** | Natural pitch contour, organic micro-tremors, normal prosody |
+| `ai_generated_voice.wav` | Neural voice clone (XTTS-v2) | **HIGH RISK (95%)** | High-frequency cutoff (>7.5kHz), phase incoherence, robotic prosody |
+| `natural_voice.wav` | Human voice recording | **LOW RISK (5%)** | Full-bandwidth harmonics, natural jitter/shimmer |
 
 ---
 
 ## 📡 API Reference
 
-Interactive OpenAPI documentation is available at `http://127.0.0.1:8000/docs`.
+Interactive OpenAPI documentation is available at `/docs` when running the backend:
 
-### Real-Time Live Call Stream
-| Method | Endpoint | Description |
-|:---|:---|:---|
-| `WebSocket` | `/api/v1/stream/live-call` | Real-time sliding audio chunk analysis (PCM16/WebM) |
-| `POST` | `/api/v1/stream/simulate` | Simulate scenario streams (CEO clone, Digital Arrest, Benign) |
-
-### Blockchain Audit Ledger
-| Method | Endpoint | Description |
-|:---|:---|:---|
-| `GET` | `/api/v1/blockchain/ledger` | Fetch full tamper-proof cryptographic audit chain |
-| `GET` | `/api/v1/blockchain/stats` | Blockchain integrity status, total blocks, genesis hash |
-| `GET` | `/api/v1/blockchain/verify/{cert_id}` | Public verification of a Sec 65B forensic certificate |
-
-### Deep File Analysis & Registry
-| Method | Endpoint | Description |
-|:---|:---|:---|
-| `POST` | `/api/v1/analyze` | Multi-modal file analysis (audio/video deepfake + vocoder + ASR) |
-| `POST` | `/api/v1/analyze/transcript` | Real-time scam script classification (English & Hindi) |
-| `POST` | `/api/v1/registry/members` | Enrol real voice biometric profile into Safe-Voice Registry |
-| `POST` | `/api/v1/registry/verify` | Verify incoming voice note against enrolled speaker embedding |
+- `POST /api/v1/analyze/audio`: Upload and analyze audio files (WAV, MP3, M4A, OGG).
+- `POST /api/v1/analyze/video`: Frame-by-frame deepfake face manipulation detection (MesoNet-Inception).
+- `POST /api/v1/analyze/text`: Scam intent and keyword extraction from call transcripts or SMS.
+- `WS   /api/v1/stream/live-call`: Real-time bidirectional streaming audio inspection.
+- `GET  /api/v1/blockchain/ledger`: Inspect the tamper-proof cryptographic evidence ledger.
+- `POST /api/v1/sdk/verify-transfer`: Banking SDK endpoint for real-time transaction verification.
 
 ---
 
-## 💻 Enterprise Banking SDK Example
+## 👥 Team & SIH 2026 Credits
 
-Integrate DigiRaksha into high-value fund transfers in under 5 lines of code:
-
-```python
-from app.sdk.banking_gate import DigiRakshaBankingGate
-
-# Initialize gate with your organization credentials
-gate = DigiRakshaBankingGate(api_base_url="http://127.0.0.1:8000")
-
-# Intercept high-value wire transfer during a voice authorization call
-decision = gate.intercept_wire_transfer(
-    caller_audio_path="suspicious_call_sample.wav",
-    transfer_amount_inr=2500000.0,  # ₹25,00,000 (~$30,000)
-    beneficiary_account="HDFC0001234-998877",
-    caller_claimed_identity="Rajesh Sharma (CFO)"
-)
-
-if decision["status"] == "BLOCKED":
-    print("🚨 FRAUD DETECTED! Wire transfer blocked.")
-    print("Reason:", decision["reason"])
-    print("Blockchain Certificate ID:", decision["blockchain_cert_id"])
-    # Trigger out-of-band multi-factor verification
-elif decision["status"] == "AUTHORIZED":
-    print("✅ Voice authenticity verified. Transaction proceeded.")
-```
-
----
-
-## 🧪 Testing & Validation
-
-The framework includes automated test suites covering the vocoder DSP analyzer, blockchain Merkle tree, WebSocket stream simulation, and banking gate SDK:
-
-```cmd
-cd backend
-.venv\Scripts\python.exe -m pytest tests/test_stream_and_blockchain.py -v
-```
-
-All 5 core real-time voice cloning and blockchain tests pass with 100% assertions.
-
----
-
-## 🏛️ Regulatory & Legal Compliance
-- **Bharatiya Sakshya Adhiniyam, 2023 (BSA)** / **Section 65B Indian Evidence Act**: Every audio transaction is notarized with SHA-256 Merkle hashes, ensuring forensic court admissibility.
-- **DPDP Act (Digital Personal Data Protection Act, 2023)**: Complete local processing on premise or private VPC. No raw biometric voice data is exported to third-party APIs.
-- **Telecom Commercial Communications Customer Preference Regulations (TCCCPR)**: Ready for SIP/RTP integration at telecom gateway level.
-
----
-
-<div align="center">
-<b>SIH 2026 • Team Terminal Breakers • AICTE Cyber Security Cell</b>
-</div>
+- **Team**: TERMINAL BREAKERS
+- **Problem Statement**: SIH 2026 — PS 26104
+- **Organization**: AICTE Cyber Security Cell
+- **License**: [MIT License](LICENSE)

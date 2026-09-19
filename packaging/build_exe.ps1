@@ -92,35 +92,46 @@ if (Test-Path $srcEcapa) {
     $addDataArgs += "$srcEcapa;data\models\ecapa-tdnn"
 }
 
-Write-Host "[build] Running PyInstaller (onefile console)..."
+Write-Host "[build] Building DigiRaksha_Online.exe (Cloud Collaboration)..."
 & $Py -m PyInstaller `
     --noconfirm `
     --clean `
     --onefile `
-    --name "DigiRaksha" `
+    --name "DigiRaksha_Online" `
     --console `
     @addDataArgs `
     --distpath $out `
-    --workpath (Join-Path $Root "build\pyinstaller") `
-    --specpath (Join-Path $Root "build\spec") `
-    "packaging\launcher.py"
-if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed" }
+    --workpath (Join-Path $Root "build\pyinstaller_online") `
+    --specpath (Join-Path $Root "build\spec_online") `
+    "packaging\launcher_online.py"
+if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed for DigiRaksha_Online" }
 
-$exe = Join-Path $out "DigiRaksha.exe"
-if (-not (Test-Path $exe)) { throw "EXE not produced: $exe" }
+Write-Host "[build] Building DigiRaksha_Offline.exe (Standalone Local)..."
+& $Py -m PyInstaller `
+    --noconfirm `
+    --clean `
+    --onefile `
+    --name "DigiRaksha_Offline" `
+    --console `
+    @addDataArgs `
+    --distpath $out `
+    --workpath (Join-Path $Root "build\pyinstaller_offline") `
+    --specpath (Join-Path $Root "build\spec_offline") `
+    "packaging\launcher_offline.py"
+if ($LASTEXITCODE -ne 0) { throw "PyInstaller failed for DigiRaksha_Offline" }
 
-# Copy to root as well for convenience
-$rootExe = Join-Path $Root "DigiRaksha.exe"
-Copy-Item $exe $rootExe -Force
+$exeOnline = Join-Path $out "DigiRaksha_Online.exe"
+$exeOffline = Join-Path $out "DigiRaksha_Offline.exe"
 
-$size = (Get-Item $exe).Length / 1MB
-$sizeMb = "{0:N1}" -f $size
+$rootOnline = Join-Path $Root "DigiRaksha_Online.exe"
+$rootOffline = Join-Path $Root "DigiRaksha_Offline.exe"
+
+Copy-Item $exeOnline $rootOnline -Force
+Copy-Item $exeOffline $rootOffline -Force
+
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Green
-Write-Host "[build] SUCCESS: DigiRaksha.exe successfully created!" -ForegroundColor Green
-Write-Host "[build] Location 1: $exe  ($sizeMb MB)" -ForegroundColor Cyan
-Write-Host "[build] Location 2: $rootExe  ($sizeMb MB)" -ForegroundColor Cyan
+Write-Host "[build] SUCCESS: Dual Executables Created!" -ForegroundColor Green
+Write-Host "  1. $rootOnline (Online Collaboration Mode)" -ForegroundColor Cyan
+Write-Host "  2. $rootOffline (100% Offline Standalone Mode)" -ForegroundColor Cyan
 Write-Host "============================================================" -ForegroundColor Green
-Write-Host "[build] Behavior when double-clicked by any user:"
-Write-Host "        - If files/dependencies exist: skips download and launches immediately."
-Write-Host "        - If files/dependencies missing: auto-downloads & sets up, then launches."
