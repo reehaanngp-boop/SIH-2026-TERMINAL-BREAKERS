@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, getOpenRouterKey, setOpenRouterKey } from "../api";
+import { api, getApiBase, setApiBase, getOpenRouterKey, setOpenRouterKey } from "../api";
 import { useToasts } from "../components/Toast";
 import { useI18n } from "../i18n";
 import type { MetaInfo } from "../types";
@@ -13,6 +13,11 @@ export function SettingsPage() {
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  // Backend URL connection state
+  const [backendUrl, setBackendUrl] = useState<string>(() => getApiBase() || "");
+  const [testingBackend, setTestingBackend] = useState(false);
+  const [backendStatus, setBackendStatus] = useState<"ok" | "err" | null>(null);
 
   // OpenRouter state
   const [orKey, setOrKey] = useState<string>(() => getOpenRouterKey() || "");
@@ -69,6 +74,33 @@ export function SettingsPage() {
     }
   };
 
+  const handleSaveBackendUrl = () => {
+    setApiBase(backendUrl);
+    push("Backend URL saved! Reloading...", "success");
+    setTimeout(() => window.location.reload(), 500);
+  };
+
+  const handleTestBackendUrl = async () => {
+    setTestingBackend(true);
+    setBackendStatus(null);
+    setApiBase(backendUrl);
+    try {
+      const res = await api.getMeta();
+      if (res && res.name) {
+        setBackendStatus("ok");
+        push(`Connected to ${res.name} v${res.version} successfully!`, "success");
+      } else {
+        setBackendStatus("err");
+        push("Connected, but unexpected payload returned.", "error");
+      }
+    } catch {
+      setBackendStatus("err");
+      push("Failed to connect to backend URL. Please ensure your tunnel is running.", "error");
+    } finally {
+      setTestingBackend(false);
+    }
+  };
+
   return (
     <div className="page">
       <div className="page-head">
@@ -77,6 +109,67 @@ export function SettingsPage() {
       </div>
 
       <div className="grid grid-2">
+        {/* Cloudflare Tunnel / Backend Connection */}
+        <div className="card">
+          <div className="card-title">🌐 Cloudflare Backend Tunnel Endpoint</div>
+          <p className="muted small" style={{ marginBottom: 12 }}>
+            Configure your active FastAPI backend URL. Allows seamless team collaboration with Cloudflare Tunnels (e.g. <code>https://your-tunnel.trycloudflare.com</code>).
+          </p>
+
+          <label className="field-label">Backend API URL</label>
+          <input
+            className="input"
+            type="text"
+            placeholder="https://your-tunnel.trycloudflare.com or http://127.0.0.1:8000"
+            value={backendUrl}
+            onChange={(e) => setBackendUrl(e.target.value)}
+          />
+
+          <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              style={{ flex: 1 }}
+              onClick={handleSaveBackendUrl}
+            >
+              Save Endpoint
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ flex: 1 }}
+              disabled={testingBackend}
+              onClick={handleTestBackendUrl}
+            >
+              {testingBackend ? "Testing…" : "Test Connection"}
+            </button>
+            {backendUrl && (
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => {
+                  setBackendUrl("");
+                  setApiBase(null);
+                  push("Reset to default backend URL.", "info");
+                  setTimeout(() => window.location.reload(), 500);
+                }}
+              >
+                Reset
+              </button>
+            )}
+          </div>
+          {backendStatus === "ok" && (
+            <div className="alert-box alert-success" style={{ marginTop: 10 }}>
+              ✓ Backend active and reachable
+            </div>
+          )}
+          {backendStatus === "err" && (
+            <div className="error-banner" style={{ marginTop: 10 }}>
+              ✕ Backend unreachable. Verify your cloudflared tunnel is running.
+            </div>
+          )}
+        </div>
+
         {/* OpenRouter AI Config */}
         <div className="card">
           <div className="card-title">🤖 {t("settings.openrouter_title")}</div>

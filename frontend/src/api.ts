@@ -25,14 +25,27 @@ import type {
   VoicePrintCreateResult,
 } from "./types";
 
-const API_BASE = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
-const API = `${API_BASE}/api/v1`;
+const BACKEND_URL_KEY = "digiraksha.backend_url";
 const TOKEN_KEY = "digiraksha.token";
 const OPENROUTER_KEY = "digiraksha.openrouter_key";
 
 export function getApiBase(): string {
-  return API_BASE;
+  const custom = localStorage.getItem(BACKEND_URL_KEY);
+  if (custom && custom.trim()) return custom.trim().replace(/\/+$/, "");
+  return (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
 }
+
+export function setApiBase(url: string | null): void {
+  if (url && url.trim()) localStorage.setItem(BACKEND_URL_KEY, url.trim().replace(/\/+$/, ""));
+  else localStorage.removeItem(BACKEND_URL_KEY);
+}
+
+export function getApiUrl(path: string): string {
+  const base = getApiBase();
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${base}/api/v1${cleanPath}`;
+}
+
 
 let token: string | null = localStorage.getItem(TOKEN_KEY);
 let openrouterKey: string | null = localStorage.getItem(OPENROUTER_KEY);
@@ -81,7 +94,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (init?.body && typeof init.body === "string" && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
-  const res = await fetch(`${API}${path}`, { ...init, headers });
+  const res = await fetch(getApiUrl(path), { ...init, headers });
   if (!res.ok) {
     if (res.status === 401 && onUnauthorized) onUnauthorized();
     const text = await res.text().catch(() => "");
@@ -100,7 +113,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 async function download(path: string): Promise<Blob> {
   const headers = new Headers();
   if (token) headers.set("Authorization", `Bearer ${token}`);
-  const res = await fetch(`${API}${path}`, { headers });
+  const res = await fetch(getApiUrl(path), { headers });
   if (!res.ok) {
     if (res.status === 401 && onUnauthorized) onUnauthorized();
     throw new Error(`Download failed (${res.status})`);

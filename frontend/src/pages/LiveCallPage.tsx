@@ -11,12 +11,12 @@
  * 6. Section 65B Bharatiya Sakshya Adhiniyam Court-Admissible Blockchain Audit Trail
  */
 import { useEffect, useRef, useState } from "react";
-import { api } from "../api";
+import { api, getApiBase } from "../api";
 import { Badge } from "../components/Badge";
 import { useI18n } from "../i18n";
 
 function getWsEndpoint(): string {
-  const customApi = import.meta.env.VITE_API_URL;
+  const customApi = getApiBase();
   if (customApi) {
     try {
       const parsed = new URL(customApi);
