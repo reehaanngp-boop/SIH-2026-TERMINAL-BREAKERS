@@ -861,6 +861,11 @@ export function LiveCallPage() {
                 </div>
                 <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
                   Runs on every sliding window for low-latency first-pass scoring
+                  {(liveW2V ?? 0) >= 0.5 && (liveDhwani ?? 0) < 0.5 && liveVerdict === "GENUINE_HUMAN" && (
+                    <span style={{ display: "block", color: "var(--warning)", marginTop: 2 }}>
+                      ⓘ Single-window spike suppressed — Dhwani specialists read bonafide (crop artifact)
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -926,7 +931,7 @@ export function LiveCallPage() {
                   />
                 </div>
                 <div style={{ fontSize: 11, color: "var(--text-muted)" }}>
-                  Fusion mode: <span className="mono-sm faint">{liveFusion || "waiting"}</span> • Two consecutive high windows required for CRITICAL
+                  Fusion mode: <span className="mono-sm faint">{liveFusion || "waiting"}</span> • CRITICAL requires sustained elevated risk (~1.0s of new audio) with a decisive specialist — a lone window spike never alerts
                   <span style={{ float: "right", color: liveRisk >= 0.5 ? "var(--danger)" : "var(--safe)" }}>{(liveRisk * 100).toFixed(0)}% risk</span>
                 </div>
               </div>

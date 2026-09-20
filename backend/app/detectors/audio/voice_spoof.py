@@ -32,6 +32,8 @@ SPEECH_RMS_THRESHOLD = 0.008
 LIVE_BUFFER_MAX = SAMPLE_RATE * 15          # rolling store for slower, higher-accuracy engines
 DHWANI_THROTTLE_SAMPLES = int(SAMPLE_RATE * 2.4)  # re-run Dhwani once ~2.4s of audio has arrived
 LARGE_THROTTLE_SAMPLES = int(SAMPLE_RATE * 5.0)   # large wav2vec specialist runs at most every ~5s
+CRITICAL_MIN_STREAK = 3    # sustained ≥ risk 0.50 (≈1.0s of NEW audio) before CRITICAL fires
+BORDERLINE_MIN_STREAK = 2  # sustained ≥ risk 0.28 (≈0.5s of NEW audio) before BORDERLINE fires
 
 from app.detectors.audio.vocoder_analyzer import VocoderAnalyzer
 from app.detectors.audio.dhwani_detector import DhwaniDetector
@@ -210,10 +212,14 @@ class VoiceSpoofDetector(BaseDetector):
         * **Wav2Vec2 large** — corroboration against the rolling buffer every
           ~5s, only while nothing decisive has fired yet.
 
-        Fusion mirrors ``wav2vec_spoof._fuse``: Dhwani's "fake" verdict is
-        trusted over a base "real" reading (that is the exact failure mode we
-        are closing), the large model corroborates but never overrides a
-        base+Dhwani consensus of "real", and the two agree -> safe.
+        Fusion mirrors ``wav2vec_spoof._fuse`` with one live-specific guard:
+        the base Wav2Vec2 occasionally spikes to ~0.9 on a genuine-speech crop
+        while both specialists read bonafide; a lone base spike is collapsed to
+        the consensus of all signals so it can never raise a false alert. The
+        decisive specialists (Dhwani for modern neural clones, base when no
+        specialist exists) are the only authoritative "fake" voters. Alerts then
+        require the risk to stay elevated across ticks spanning new audio
+        (~1.0s for CRITICAL, ~0.5s for BORDERLINE), never a single window.
         """
         if x is None or len(x) < 1600:
             return {
@@ -296,13 +302,29 @@ class VoiceSpoofDetector(BaseDetector):
                     pass
 
         # -- Three-signal live fusion (mirrors file-path _fuse) --------------
+        # The base Wav2Vec2 is fast but crop-position unstable: on genuine
+        # speech it occasionally spikes to ~0.9 on a single 2s window while
+        # both specialists (Dhwani, large) read bonafide. A lone base spike
+        # must therefore NOT outvote two dissenting specialists — only a
+        # specialist "fake" (or base when no specialist exists) is authoritative.
         if p_dhwani is not None and p_dhwani >= 0.5:
+            # Decisive specialist: catches modern zero-shot neural clones that
+            # the base model reads as human.
             raw_risk = max(p_base or 0.0, p_dhwani)
             mode = "dhwani-fake"
             model = "ensemble"
-        elif p_base is not None and p_base >= 0.5:
+        elif p_dhwani is None and p_base is not None and p_base >= 0.5:
+            # No specialist available: base model alone is authoritative
+            # (best-generalisation anti-spoof classifier).
             raw_risk = p_base
             mode = "wav2vec-fake"
+            model = "primary-only"
+        elif p_base is not None and p_base >= 0.5:
+            # Base leaps high but the decisive specialist dissents — the known
+            # false-positive shape (crop-positioning artifact). Collapse to the
+            # consensus of all signals: the lone spike must not raise an alert.
+            raw_risk = min([p for p in (p_base, p_dhwani, p_large) if p is not None] or [0.0])
+            mode = "consensus-real"
             model = "ensemble"
         elif p_large is not None and p_large >= 0.5:
             if p_dhwani is not None and p_dhwani < 0.5:
@@ -320,19 +342,20 @@ class VoiceSpoofDetector(BaseDetector):
         dynamic_risk = round(float(np.clip(raw_risk, 0.0, 1.0)), 3)
         liveness = round(float(np.clip(1.0 - dynamic_risk, 0.0, 1.0)), 3)
 
-        # Debounce: a model spike on a single sliding window is not enough for
-        # a critical verdict (crop-positioning artifacts produce one-off high
-        # readings on genuine speech). CRITICAL requires two consecutive fused
-        # "fake" windows; a lone spike degrades to BORDERLINE.
-        if dynamic_risk >= 0.50:
+        # Debounce by *sustained exposure*, not window count. Windows overlap
+        # 75% (hop 0.5s over a 2s window), so two consecutive ticks can re-vote
+        # the same bad 2s crop. Alerts therefore require the risk to stay
+        # elevated across ticks that span ~1.0s (CRITICAL) / ~0.5s (BORDERLINE)
+        # of NEW audio; a single-tick spike never alarms.
+        if dynamic_risk >= 0.28:
             self._live_high_streak += 1
         else:
             self._live_high_streak = 0
 
-        if dynamic_risk >= 0.50 and self._live_high_streak >= 2:
+        if dynamic_risk >= 0.50 and self._live_high_streak >= CRITICAL_MIN_STREAK:
             verdict = "CRITICAL_IMPERSONATION"
             alert = "HIGH RISK: Synthetic / AI Cloned Voice Detected. Suspected Impersonation Fraud. HALT high-risk actions."
-        elif dynamic_risk >= 0.28 or (dynamic_risk >= 0.50 and self._live_high_streak < 2):
+        elif dynamic_risk >= 0.28 and self._live_high_streak >= BORDERLINE_MIN_STREAK:
             verdict = "BORDERLINE_SUSPICIOUS"
             alert = "CAUTION: Model indicators suggest possible voice cloning. Challenge with out-of-band verification."
         else:
