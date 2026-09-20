@@ -255,7 +255,7 @@ def generate_pdf():
     story.append(Paragraph("2. System Architecture & Multi-Layer Pipeline", h1_style))
     story.append(Paragraph(
         "DigiRaksha implements a zero-lag (&lt;30ms) multi-layer forensic inspection matrix designed for telecom carriers, "
-        "call centers, core banking servers, and personal desktop clients:",
+        "call centers and personal desktop clients:",
         body_style
     ))
 
@@ -374,11 +374,12 @@ def generate_pdf():
     story.append(t_threats)
     story.append(Spacer(1, 6))
 
-    story.append(Paragraph("D. Dynamic Impersonation Risk Calculator (<30ms Latency)", h2_style))
+    story.append(Paragraph("D. Dynamic Impersonation Risk Calculator", h2_style))
     story.append(Paragraph(
-        "DigiRaksha combines acoustic spoofing probability (40%), vocoder spectral cues (35%), and NLP semantic threat probability (25%) "
-        "into a composite 0–100 score. The score is evaluated continuously over sliding temporal windows. If risk exceeds 65, the system immediately "
-        "triggers pre-action interceptors, displays red warning banners, activates audio alerts, and locks related banking authorizations.",
+        "DigiRaksha combines a model-backed voice authenticity score (40%) — from the Wav2Vec2 ASVspoof ensemble and the multilingual Dhwani "
+        "detector — with the NLP scam-language semantic threat probability (35%) into a composite 0–100 score. The score is evaluated continuously "
+        "over sliding temporal windows. If risk exceeds 65, the system immediately triggers pre-action interceptors, displays red warning banners, "
+        "activates audio alerts, and challenges callers with out-of-band verification.",
         body_style
     ))
 
@@ -408,36 +409,7 @@ def generate_pdf():
     ))
     story.append(Spacer(1, 6))
 
-    story.append(Paragraph("5. Enterprise Banking & Telephony SDK (Pre-Action Wire Gate)", h1_style))
-    story.append(Paragraph(
-        "DigiRaksha is not just an alerting tool; it is a <b>pre-action transactional firewall</b> for core banking applications (Finacle, TCS BaNCS) "
-        "and enterprise contact centers (Genesys, Twilio, Cisco Webex). The <code>DigiRakshaBankingGate</code> SDK intercepts wire transfers "
-        "authorized over phone or video calls before funds are dispatched:",
-        body_style
-    ))
-
-    banking_code = (
-        "# Python Enterprise Banking Integration Example<br/>"
-        "from app.sdk.banking_gate import DigiRakshaBankingGate<br/><br/>"
-        "gate = DigiRakshaBankingGate(api_base_url=\"http://127.0.0.1:8000\")<br/><br/>"
-        "# Intercept wire transfer during live telephonic confirmation<br/>"
-        "decision = gate.intercept_wire_transfer(<br/>"
-        "&nbsp;&nbsp;&nbsp;&nbsp;caller_audio_path=\"call_stream_sample.wav\",<br/>"
-        "&nbsp;&nbsp;&nbsp;&nbsp;transfer_amount_inr=4800000.0,&nbsp;&nbsp;# Rs 48,00,000 (~$58,000)<br/>"
-        "&nbsp;&nbsp;&nbsp;&nbsp;beneficiary_account=\"HDFC0001234-998877\",<br/>"
-        "&nbsp;&nbsp;&nbsp;&nbsp;caller_claimed_identity=\"Rajesh Sharma (CFO)\"<br/>"
-        ")<br/><br/>"
-        "if decision[\"status\"] == \"BLOCKED\":<br/>"
-        "&nbsp;&nbsp;&nbsp;&nbsp;print(\"WIRE TRANSFER BLOCKED! Impersonation Risk:\", decision[\"risk_score\"])<br/>"
-        "&nbsp;&nbsp;&nbsp;&nbsp;print(\"Certificate ID:\", decision[\"blockchain_cert_id\"])<br/>"
-        "&nbsp;&nbsp;&nbsp;&nbsp;# Mandate Step-Up out-of-band biometric challenge code<br/>"
-        "elif decision[\"status\"] == \"AUTHORIZED\":<br/>"
-        "&nbsp;&nbsp;&nbsp;&nbsp;print(\"Voice verified. Releasing funds to core banking gateway.\")"
-    )
-    story.append(make_code_box(banking_code))
-    story.append(Spacer(1, 8))
-
-    story.append(Paragraph("6. Family Safe-Voice Vault & 12 Indian Languages", h1_style))
+    story.append(Paragraph("5. Family Safe-Voice Vault & 12 Indian Languages", h1_style))
     story.append(Paragraph(
         "<b>A. Safe-Voice Biometric Registry:</b> Users and VIPs can pre-enroll 10-second reference voice notes. "
         "When an incoming ransom or emergency call occurs, DigiRaksha extracts high-dimensional speaker embeddings "
@@ -456,7 +428,7 @@ def generate_pdf():
     # =========================================================================
     # PAGE 4: System Requirements & Prerequisites
     # =========================================================================
-    story.append(Paragraph("7. System Requirements & Prerequisites", h1_style))
+    story.append(Paragraph("6. System Requirements & Prerequisites", h1_style))
     story.append(Paragraph(
         "DigiRaksha is designed to run efficiently on standard consumer and workstation hardware without requiring expensive enterprise GPUs:",
         body_style
@@ -537,7 +509,7 @@ def generate_pdf():
     # =========================================================================
     # PAGE 5: Step-by-Step Installation Guide
     # =========================================================================
-    story.append(Paragraph("8. Step-by-Step Installation Guide", h1_style))
+    story.append(Paragraph("7. Step-by-Step Installation Guide", h1_style))
 
     story.append(Paragraph("Option A: One-Click Standalone Desktop Run (No Install)", h2_style))
     story.append(Paragraph(
@@ -610,7 +582,7 @@ def generate_pdf():
     # =========================================================================
     # PAGE 6: How to Run the Tool & Operational Walkthrough
     # =========================================================================
-    story.append(Paragraph("9. How to Run & Operate DigiRaksha", h1_style))
+    story.append(Paragraph("8. How to Run & Operate DigiRaksha", h1_style))
 
     story.append(Paragraph("Method 1: One-Click Windows Batch Launcher (Recommended)", h2_style))
     story.append(Paragraph("Double-click <code>DigiRaksha.bat</code> from the project root directory, or run in terminal:", body_style))
@@ -684,7 +656,7 @@ def generate_pdf():
     story.append(t_ep)
     story.append(Spacer(1, 6))
 
-    story.append(Paragraph("10. Feature-by-Feature Operational Walkthrough", h1_style))
+    story.append(Paragraph("9. Feature-by-Feature Operational Walkthrough", h1_style))
     story.append(Paragraph("<b>1. Live Call Sentinel:</b> Navigate to 'Live Sentinel'. Choose an attack scenario (e.g. <i>Cloned CEO Wire Extortion</i> or <i>Fake Police Digital Arrest</i>) or click 'Start Live Microphone'. Observe the real-time CRT oscilloscope, the 24-band frequency spectrum bars, live transcription, and the animated radar gauge.", body_style))
     story.append(Paragraph("<b>2. Media Scanner:</b> Drag and drop suspicious audio/video recordings into the dropzone. The system extracts multi-modal cues (AASIST spoof probability, MesoNet face flicker, Whisper transcripts, and semantic red flags).", body_style))
     story.append(Paragraph("<b>3. Safe-Voice Vault:</b> Pre-enroll family members or corporate executives. Record or upload genuine voice samples. When verified against subsequent calls, the system outputs biometric similarity scores.", body_style))
@@ -695,10 +667,10 @@ def generate_pdf():
     # =========================================================================
     # PAGE 7: Testing, Troubleshooting & Statutory Helplines
     # =========================================================================
-    story.append(Paragraph("11. Automated Testing & Verification Suite", h1_style))
+    story.append(Paragraph("10. Automated Testing & Verification Suite", h1_style))
     story.append(Paragraph(
         "DigiRaksha includes an automated test suite verifying vocoder DSP algorithms, Merkle tree blockchain integrity, "
-        "WebSocket streaming chunk analysis, and the banking gate interceptor:",
+        "and WebSocket streaming chunk analysis:",
         body_style
     ))
     test_code = (
@@ -711,7 +683,7 @@ def generate_pdf():
     story.append(make_code_box(test_code))
     story.append(Spacer(1, 6))
 
-    story.append(Paragraph("12. Troubleshooting & Common Pitfalls", h1_style))
+    story.append(Paragraph("11. Troubleshooting & Common Pitfalls", h1_style))
     troubleshoot_data = [
         [
             Paragraph("<b>Symptom / Error</b>", body_style),
@@ -759,7 +731,7 @@ def generate_pdf():
     story.append(t_trouble)
     story.append(Spacer(1, 8))
 
-    story.append(Paragraph("13. Statutory Cyber Crime Helplines & Advisory Notice", h1_style))
+    story.append(Paragraph("12. Statutory Cyber Crime Helplines & Advisory Notice", h1_style))
     story.append(Paragraph(
         "DigiRaksha is built in strict alignment with guidelines published by the Ministry of Home Affairs (MHA), "
         "the Indian Cyber Crime Coordination Centre (I4C), and the Department of Telecommunications (DoT):",

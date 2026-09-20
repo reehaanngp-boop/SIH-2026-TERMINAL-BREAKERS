@@ -19,7 +19,6 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { VoiceMatchPage } from "./pages/VoiceMatchPage";
 import { LiveCallPage } from "./pages/LiveCallPage";
 import { BlockchainPage } from "./pages/BlockchainPage";
-import { SdkDocsPage } from "./pages/SdkDocsPage";
 import { MediaAuthPage } from "./pages/MediaAuthPage";
 import { AiAssistantWidget } from "./components/AiAssistantWidget";
 
@@ -231,10 +230,6 @@ export default function App() {
       break;
     case "settings":
       page = <SettingsPage />;
-      break;
-    case "sdk":
-    case "sdk-docs":
-      page = <SdkDocsPage />;
       break;
     case "media-auth":
       page = <MediaAuthPage />;

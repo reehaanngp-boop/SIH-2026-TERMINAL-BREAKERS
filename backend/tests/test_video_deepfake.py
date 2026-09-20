@@ -70,8 +70,9 @@ def test_describe_reports_mesonet_when_present():
     assert d["mesonet_available"] is True
 
 
-def test_video_risk_capped_warning_only():
-    """A maximum model-backed video score is capped and never critical."""
+def test_video_risk_no_longer_scores():
+    """Frame-level video heuristics are advisory only: a maximum model-backed
+    video score must not move the overall risk verdict at all."""
     video = {
         "status": "available",
         "score": 1.0,
@@ -79,8 +80,6 @@ def test_video_risk_capped_warning_only():
         "metrics": {"meso_score": 1.0},
     }
     out = risk_engine.assess(media_type="video", video=video)
-    # video weight 0.25 * capped 0.4 contribution -> exactly 40.0 (medium max).
-    assert out["risk"]["score"] <= 40.0
-    flags = [f["id"] for f in out["red_flags"]]
-    assert flags == ["video-warning"]
-    assert all(f["severity"] == "warning" for f in out["red_flags"])
+    assert out["risk"]["level"] == "low"
+    assert out["risk"]["score"] == 5.0
+    assert out["red_flags"] == []

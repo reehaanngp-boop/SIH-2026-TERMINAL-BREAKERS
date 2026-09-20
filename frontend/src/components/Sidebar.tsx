@@ -27,7 +27,6 @@ export function Sidebar({ route, onNavigate }: { route: string; onNavigate: (r: 
   const secondary: NavItem[] = [
     { key: "registry",   icon: "◉",  label: t("nav.registry") },
     { key: "blockchain", icon: "⛓",  label: t("nav.blockchain") },
-    { key: "sdk",        icon: "⚡",  label: t("nav.sdk") },
     { key: "history",    icon: "≡",   label: t("nav.history") },
     { key: "settings",   icon: "⚙",  label: t("nav.settings") },
   ];

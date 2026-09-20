@@ -48,21 +48,15 @@ class DetectorManager:
         for name, det in self.detectors.items():
             info = det.describe()
             if name == "voice":
-                has_clone = bool(getattr(self.voice, "_has_clone_model", lambda: False)())
-                has_aasist = bool(getattr(self.voice, "_has_aasist", lambda: False)())
+                has_w2v = bool(getattr(self.voice, "wav2vec_detector", None) and self.voice.wav2vec_detector.installed())
                 has_dhwani = bool(getattr(self.voice, "dhwani_detector", None) and self.voice.dhwani_detector.available())
-                info["aasist_available"] = has_aasist
-                info["clone_model_available"] = has_clone
+                info["wav2vec2_available"] = has_w2v
                 info["dhwani_available"] = has_dhwani
                 info["languages_supported"] = ["English", "Hindi", "Tamil", "Telugu", "Malayalam"]
-                if has_dhwani:
-                    info["engine"] = "dhwani_multilingual+vocoder_dsp+acoustic_ensemble"
-                elif has_clone and has_aasist:
-                    info["engine"] = "voice_clone_ai+aasist"
-                elif has_clone:
-                    info["engine"] = "voice_clone_ai+spectrogram"
-                elif has_aasist:
-                    info["engine"] = "aasist"
+                if has_w2v:
+                    info["engine"] = "wav2vec2_deepfake+dhwani_multilingual" if has_dhwani else "wav2vec2_deepfake"
+                elif has_dhwani:
+                    info["engine"] = "dhwani_multilingual"
                 else:
                     info["engine"] = "spectrogram"
             if name == "text":

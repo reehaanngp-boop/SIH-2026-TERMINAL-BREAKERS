@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     enable_aasist: bool = True  # gracefully falls back to heuristics when torch/model absent
     enable_dhwani: bool = True  # Multilingual Wav2Vec2 + AASIST ONNX foundation model
     dhwani_model_path: Path | None = None  # None => resolves to model_dir / "dhwani_multilingual.onnx"
+    enable_wav2vec2: bool = True  # ASVspoof fine-tuned Wav2Vec2 ensemble (primary voice engine)
 
     # Speaker verification (Safe-Voice Registry)
     # 0.50 separates ECAPA embeddings cleanly on real data (same-speaker ~0.85,

@@ -12,7 +12,7 @@
 [![Cloudflare Pages](https://img.shields.io/badge/Deployed-Cloudflare%20Pages-F38020.svg)](https://sih-2026-terminal-breakers.pages.dev)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-*Real-time voice stream analysis • Dhwani multilingual ONNX foundation • Neural vocoder DSP forensics • Dynamic risk escalation • Immutable blockchain chain of custody • Enterprise banking SDK*
+*Real-time voice stream analysis • Wav2Vec2 ASVspoof deepfake ensemble • Dhwani multilingual ONNX foundation • Model-backed dynamic risk escalation • Immutable blockchain chain of custody*
 
 </div>
 
@@ -206,7 +206,6 @@ Interactive OpenAPI documentation is available at `/docs` when running the backe
 - `POST /api/v1/analyze/text`: Scam intent and keyword extraction from call transcripts or SMS.
 - `WS   /api/v1/stream/live-call`: Real-time bidirectional streaming audio inspection.
 - `GET  /api/v1/blockchain/ledger`: Inspect the tamper-proof cryptographic evidence ledger.
-- `POST /api/v1/sdk/verify-transfer`: Banking SDK endpoint for real-time transaction verification.
 
 ---
 

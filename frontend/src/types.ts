@@ -385,7 +385,6 @@ export type NavKey =
   | "media-auth"
   | "registry"
   | "blockchain"
-  | "sdk"
   | "assistant"
   | "cases"
   | "evidence"

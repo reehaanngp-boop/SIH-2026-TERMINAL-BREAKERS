@@ -103,23 +103,22 @@ def test_no_signals_returns_low():
     assert res["risk"]["score"] == 5.0
 
 
-def test_medium_boundary():
-    # A warning-level video signal alone lands in the medium band.
+def test_video_signal_no_longer_scores():
+    """Frame-level video heuristics are advisory only: they must not move the
+    risk verdict (steady webcam/video calls used to false-positive)."""
     video = {
         "name": "video",
         "status": "available",
         "available": True,
-        "score": 0.6,
+        "score": 0.9,
         "label": "likely-edited",
         "detail": "",
         "metrics": {},
     }
     res = assess(media_type="video", video=video)
-    assert res["risk"]["level"] in ("medium", "high")
-    # Frame-level heuristics are capped at warning severity — a steady webcam
-    # call must never produce the critical "edited" flag on its own.
-    assert any(f["id"] == "video-warning" for f in res["red_flags"])
-    assert not any(f["id"] == "video-edited" for f in res["red_flags"])
+    assert res["risk"]["level"] == "low"
+    assert res["risk"]["score"] == 5.0
+    assert not any(f["id"] in ("video-warning", "video-edited") for f in res["red_flags"])
 
 
 def test_missing_detectors_do_not_break():

@@ -45,6 +45,11 @@ data/models/whisper-*/
 !data/models/aasist.pth
 !data/models/mesonet/
 
+# Wav2Vec2 ASVspoof ensemble weights (~1.6 GB) - auto-downloaded from
+# Hugging Face on first run when the local folder is missing.
+data/models/wav2vec2-deepfake/
+data/models/wav2vec2-large-vcd/
+
 # Runtime
 *.log
 .DS_Store

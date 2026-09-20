@@ -17,8 +17,6 @@ const DICT: Record<string, Entry> = {
   "nav.phone": { en: "Phone Intelligence", hi: "फ़ोन खुफिया" },
   "nav.registry": { en: "Safe-Voice Registry", hi: "सेफ-वॉइस रजिस्ट्री" },
   "nav.blockchain": { en: "Evidence Ledger", hi: "साक्ष्य लेजर" },
-  "nav.sdk": { en: "API & Banking SDK", hi: "API एवं बैंकिंग SDK" },
-  "nav.sdk-docs": { en: "API & Banking SDK", hi: "API एवं बैंकिंग SDK" },
   "nav.media-auth": { en: "Media Authenticity", hi: "मीडिया प्रामाणिकता" },
   "nav.history": { en: "History", hi: "इतिहास" },
   "nav.settings": { en: "Settings", hi: "सेटिंग्स" },

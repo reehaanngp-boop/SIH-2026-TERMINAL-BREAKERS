@@ -19,3 +19,4 @@ gradio>=4.0
 httpx>=0.27
 huggingface-hub>=0.20
 onnxruntime>=1.16
+transformers>=5.0

@@ -6,9 +6,11 @@ The engine turns raw detector results into:
 * a **red-flags** list with localised explanations,
 * a **next-steps** list guiding the user to verify and report.
 
-Weights are chosen so voice and scam-language signals dominate (they are the
-most reliable), with video as a supporting signal. Missing detectors simply
-contribute nothing rather than failing the whole analysis.
+Voice and scam-language signals dominate (they are the most reliable). The
+video frame-heuristics detector no longer votes on the verdict: steady webcam/
+video calls were producing false positives, and it is not a strong signal for
+this product. Missing detectors simply contribute nothing rather than failing
+the whole analysis.
 """
 
 from __future__ import annotations
@@ -18,7 +20,7 @@ from typing import Any
 from app.core.strings import NEXT_STEPS, RED_FLAGS, RISK_LABELS
 
 # Dimension weights (renormalised over the dimensions that produced results).
-WEIGHTS = {"voice": 0.40, "text": 0.35, "video": 0.25}
+WEIGHTS = {"voice": 0.40, "text": 0.35}
 
 # Score thresholds (0-100).
 LOW_MEDIUM = 40.0
@@ -99,8 +101,8 @@ def assess(
         vs = voice["score"]
         engine = voice.get("engine", "heuristics")
         label = voice.get("label", "")
-        if any(m in engine for m in ("voice_clone", "aasist", "dhwani", "combined")):
-            # Model-backed verdict (Dhwani Multilingual / Voice Cloning AI / AASIST / Vocoder).
+        if any(m in engine for m in ("wav2vec", "voice_clone", "aasist", "dhwani", "combined")):
+            # Model-backed verdict (Wav2Vec2 ASVspoof ensemble / Dhwani Multilingual / etc).
             dim_risks["voice"] = vs
             if vs >= 0.55 or label == "likely-ai-generated":
                 flags.append(_lazy_flag("voice-ai-likely"))
@@ -116,19 +118,11 @@ def assess(
     elif voice and voice.get("label") == "no-speech":
         pass  # nothing to authenticate; not a fraud signal
 
-    # ---- Video dimension -------------------------------------------------
+    # ---- Video dimension (advisory only, never votes) --------------------
+    # Frame-level video heuristics proved unreliable (steady webcam calls
+    # scored "fake"). Kept for display in the signal panel but excluded from
+    # the risk weighting entirely.
     video_signal = _signal("video", video)
-    if video and video.get("status") == "available" and video.get("score") is not None:
-        vd = video["score"]
-        # Frame-level heuristics are a supporting cue only: webcam/video calls
-        # are naturally steady, so a high score here is never critical. Cap the
-        # contribution and keep severity at warning to avoid escalating benign
-        # calls from motion/compression artifacts.
-        dim_risks["video"] = min(vd, 0.4)
-        if vd >= 0.5:
-            flags.append(_lazy_flag("video-warning"))
-    elif video and video.get("status") == "available" and video.get("label") == "no-face":
-        flags.append(_lazy_flag("video-cannot-check"))
 
     # ---- Text dimension ---------------------------------------------------
     text_signal = _signal("text", scam)
