@@ -1,40 +1,129 @@
-"""Real-time live call stream WebSocket endpoint and telephony simulation."""
+"""Real-time live-call stream WebSocket endpoint (mic-only sentinel).
+
+The threat-simulation and benchmark sample-file endpoints were removed: the
+console is a live audit tool, not a demo player. On session end the captured
+audio is re-analysed through the authoritative full-file ensemble and the
+AASIST-style workflow (audio -> human/AI gate -> transcribe -> language ->
+scam classify by key terms -> risk-engine verdict), so the final certificate
+carries the transcript-aware risk decision, not just the live peak.
+"""
 
 from __future__ import annotations
 
 import asyncio
 import base64
 from datetime import datetime, timezone
-import hashlib
 import json
-from pathlib import Path
 from typing import Any
+from uuid import uuid4
+
 import numpy as np
-from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.config import get_settings
 from app.core.blockchain_ledger import get_blockchain_ledger
+from app.detectors.audio.audio_utils import AudioData
+from app.detectors.audio.speaker_verify import compute_embedding, verify_claimed
 from app.detectors.audio.voice_spoof import VoiceSpoofDetector
-from app.detectors.audio.speaker_verify import compute_embedding, cosine_similarity
-from app.detectors.audio.audio_utils import AudioData, load_audio_16k
 
 router = APIRouter(prefix="/stream", tags=["stream"])
 SETTINGS = get_settings()
 
-COERCIVE_KEYWORDS = [
-    "transfer", "wire", "money", "urgent", "immediately", "neft", "rtgs",
-    "digital arrest", "police", "customs", "cbi", "arrest", "court",
-    "seizure", "narcotics", "otp", "password", "bank", "account",
-    "override", "protocol", "confidential", "secret", "do not hang up"
-]
+MAX_AUDIT_SECONDS = 120  # cap the end-of-call audit window to bound latency
 
 
-class SimulationRequest(BaseModel):
-    scenario: str  # "cloned_ceo", "digital_arrest", "genuine_cxo", "benign_call"
-    claimed_identity: str | None = None
-    caller_id: str | None = None
+def run_stop_analysis(detector: VoiceSpoofDetector, combined_audio: np.ndarray) -> dict[str, Any]:
+    """AASIST-style end-of-call audit.
+
+    1. Full-file audio -> model-backed human/AI verdict (ensemble).
+    2. Whisper transcribes it and auto-detects the language.
+    3. Scam classifier scans the wording for known script signatures in that
+       language.
+    4. Risk engine fuses voice + text into the final verdict; a confirmed
+       synthetic/cloned voice forces ``terminate_call`` regardless of text.
+    """
+    combined_audio = np.asarray(combined_audio, dtype=np.float32)
+    if len(combined_audio) > 16000 * MAX_AUDIT_SECONDS:
+        combined_audio = combined_audio[-16000 * MAX_AUDIT_SECONDS:]
+
+    duration = float(len(combined_audio) / 16000.0) if len(combined_audio) else 0.0
+    audio = AudioData(samples=combined_audio, sr=16000, duration=duration)
+    voice = detector.analyze(audio)
+
+    asr_res = None
+    transcript = None
+    language = None
+    if len(combined_audio) >= 16000 * 0.5:
+        tmp = SETTINGS.upload_dir / "_converted" / f"stream_{uuid4().hex[:12]}.wav"
+        tmp.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            import soundfile as sf
+
+            sf.write(str(tmp), combined_audio, 16000, subtype="PCM_16")
+            from app.detectors.audio.asr import AsrDetector
+
+            asr_res = AsrDetector(SETTINGS).transcribe(str(tmp))
+            transcript = (asr_res or {}).get("transcript")
+            language = (asr_res or {}).get("language")
+        except Exception:  # noqa: BLE001 - ASR must never break certificate issuance
+            asr_res = None
+        finally:
+            try:
+                tmp.unlink(missing_ok=True)
+            except Exception:  # noqa: BLE001
+                pass
+
+    scam = None
+    if transcript and transcript.strip():
+        try:
+            from app.detectors.text.scam_classifier import ScamClassifierDetector
+
+            scam = ScamClassifierDetector(SETTINGS).classify(transcript, language=language)
+        except Exception:  # noqa: BLE001
+            scam = None
+
+    from app.core.risk_engine import assess
+
+    result = assess(
+        media_type="audio",
+        asr=asr_res,
+        voice=voice,
+        video=None,
+        scam=scam,
+        transcript=transcript,
+        language=language,
+    )
+    level = result["risk"]["level"]
+    verdict = {
+        "high": "CRITICAL_FRAUD_ATTEMPT",
+        "medium": "BORDERLINE_SUSPICIOUS",
+        "low": "AUTHENTIC_HUMAN",
+    }.get(level, "AUTHENTIC_HUMAN")
+
+    scam_cat = None
+    scam_conf = None
+    if scam and scam.get("metrics"):
+        cat = scam.get("label")
+        if cat and cat != "uncertain":
+            scam_cat = cat
+            scam_conf = float(scam.get("score") or 0.0)
+
+    return {
+        "scored": True,
+        "risk_score_100": float(result["risk"]["score"]),
+        "risk_level": level,
+        "risk": result["risk"],
+        "verdict": verdict,
+        "voice_label": (voice or {}).get("label"),
+        "voice_engine": (voice or {}).get("engine"),
+        "transcript": transcript,
+        "language": language,
+        "scam_category": scam_cat,
+        "scam_confidence": round(scam_conf, 3) if scam_conf is not None else None,
+        "red_flag_ids": [f.get("id") for f in result.get("red_flags", [])],
+        "terminate_call": bool(result.get("terminate_call")),
+        "next_steps": result.get("next_steps", []),
+    }
 
 
 @router.websocket("/live-call")
@@ -53,6 +142,7 @@ async def live_call_websocket(websocket: WebSocket):
 
     caller_id = "INCOMING_VOIP_CALL"
     claimed_identity = "UNKNOWN_CALLER"
+    claimed_profile = None  # cached (member, cohort) for the claimed identity
     session_active = True
     call_start_time = datetime.now(timezone.utc).isoformat()
     max_risk_observed = 0.0
@@ -64,7 +154,7 @@ async def live_call_websocket(websocket: WebSocket):
             if "text" in message:
                 try:
                     data = json.loads(message["text"])
-                except Exception:
+                except Exception:  # noqa: BLE001
                     continue
 
                 # Accept both {type: "init"} (frontend) and {action: "start"} (legacy)
@@ -73,6 +163,7 @@ async def live_call_websocket(websocket: WebSocket):
                 if msg_type in ("init", "start"):
                     caller_id = data.get("caller_id", caller_id)
                     claimed_identity = data.get("claimed_identity", claimed_identity)
+                    claimed_profile = None
                     await websocket.send_json({
                         "type": "session_started",
                         "caller_id": caller_id,
@@ -83,35 +174,70 @@ async def live_call_websocket(websocket: WebSocket):
                     continue
 
                 elif msg_type in ("stop", "end"):
-                    # Finalize session and record to blockchain
-                    final_verdict = (
-                        "CRITICAL_FRAUD_ATTEMPT" if max_risk_observed >= 0.52
-                        else ("BORDERLINE_SUSPICIOUS" if max_risk_observed >= 0.30 else "AUTHENTIC_HUMAN")
+                    # Finalize session: authoritative full-file audit + certificate
+                    combined_audio = (
+                        np.concatenate(full_audio_stream) if full_audio_stream
+                        else np.zeros(1600, dtype=np.float32)
                     )
-
-                    combined_audio = np.concatenate(full_audio_stream) if full_audio_stream else np.zeros(1600, dtype=np.float32)
                     audio_bytes = (combined_audio * 32767).astype(np.int16).tobytes()
+
+                    workflow = None
+                    try:
+                        workflow = await asyncio.to_thread(run_stop_analysis, detector, combined_audio)
+                    except Exception:  # noqa: BLE001 - final analysis must not break the summary
+                        workflow = None
+
+                    if workflow and workflow.get("scored"):
+                        final_risk = max(max_risk_observed, workflow["risk_score_100"] / 100.0)
+                        final_verdict = workflow["verdict"]
+                        terminate_call = workflow["terminate_call"]
+                    else:
+                        final_risk = max_risk_observed
+                        final_verdict = (
+                            "CRITICAL_FRAUD_ATTEMPT" if final_risk >= 0.52
+                            else ("BORDERLINE_SUSPICIOUS" if final_risk >= 0.30 else "AUTHENTIC_HUMAN")
+                        )
+                        terminate_call = False
 
                     block = ledger.record_verification(
                         caller_id=caller_id,
                         claimed_identity=claimed_identity,
                         audio_bytes_or_hash=audio_bytes,
-                        risk_score=max_risk_observed,
+                        risk_score=final_risk,
                         verdict=final_verdict,
                         vocoder_fingerprint="streaming_session_analysis",
-                        telemetry={"start_time": call_start_time, "duration_samples": len(combined_audio)},
+                        telemetry={
+                            "start_time": call_start_time,
+                            "duration_samples": len(combined_audio),
+                            "language": (workflow or {}).get("language"),
+                            "scam_category": (workflow or {}).get("scam_category"),
+                            "transcript": ((workflow or {}).get("transcript") or "")[:500],
+                        },
                     )
 
-                    await websocket.send_json({
+                    summary = {
                         "type": "session_summary",
                         "status": "COMPLETED",
-                        "final_risk_score": max_risk_observed,
+                        "final_risk_score": round(final_risk, 3),
                         "verdict": final_verdict,
                         "certificate_id": block["certificate_id"],
                         "block_hash": block["block_hash"],
                         "merkle_root": block["merkle_root"],
                         "compliance": "Section 65B Bharatiya Sakshya Adhiniyam Tamper-Proof Audit Record",
-                    })
+                    }
+                    if workflow:
+                        summary.update({
+                            "terminate_call": terminate_call,
+                            "risk_level": workflow.get("risk_level"),
+                            "voice_label": workflow.get("voice_label"),
+                            "engine": workflow.get("voice_engine"),
+                            "transcript": workflow.get("transcript"),
+                            "language": workflow.get("language"),
+                            "scam_category": workflow.get("scam_category"),
+                            "scam_confidence": workflow.get("scam_confidence"),
+                            "red_flag_ids": workflow.get("red_flag_ids", []),
+                        })
+                    await websocket.send_json(summary)
                     break
 
                 elif msg_type in ("audio_chunk", "audio"):
@@ -147,62 +273,90 @@ async def live_call_websocket(websocket: WebSocket):
                 eval_window = audio_buffer[:window_size]
                 audio_buffer = audio_buffer[hop_size:]  # Slide forward by hop_size
 
-                # Analyze chunk with low latency
+                # Analyze chunk with the live three-signal ensemble
                 telemetry = detector.analyze_live_chunk(eval_window, sr=sample_rate)
                 current_risk = telemetry["dynamic_risk_score"]
 
                 # Check Speaker Verification against claimed identity
                 speaker_info = {"matched": True, "similarity": 0.85, "note": "No enrolled profile constraint"}
-                if claimed_identity and claimed_identity != "UNKNOWN_CALLER":
+                if claimed_profile is None and claimed_identity and claimed_identity != "UNKNOWN_CALLER":
+                    from app.db.database import SessionLocal
+                    from app.db.models import FamilyMember
+
+                    db = SessionLocal()
                     try:
-                        # Query Safe-Voice registry for this identity
-                        from app.db.database import SessionLocal
-                        from app.db.models import FamilyMember
-                        db = SessionLocal()
+                        member = db.query(FamilyMember).filter(
+                            (FamilyMember.name.ilike(f"%{claimed_identity}%")) |
+                            (FamilyMember.relationship.ilike(f"%{claimed_identity}%"))
+                        ).first()
+                        cohort: list[Any] = []
+                        if member is not None:
+                            for other in db.query(FamilyMember).filter(FamilyMember.id != member.id).all():
+                                cohort.extend(e.embedding for e in other.enrollments if e.embedding is not None)
+                        claimed_profile = {"member": member, "cohort": cohort}
+                    finally:
+                        db.close()
+
+                if claimed_profile and claimed_profile["member"]:
+                    member = claimed_profile["member"]
+                    enrolled_embs = [
+                        np.asarray(e.embedding, dtype=np.float32)
+                        for e in member.enrollments
+                        if e.embedding is not None
+                    ]
+                    if enrolled_embs:
+                        probe_audio = AudioData(samples=eval_window, sr=sample_rate)
                         try:
-                            member = db.query(FamilyMember).filter(
-                                (FamilyMember.name.ilike(f"%{claimed_identity}%")) |
-                                (FamilyMember.relationship.ilike(f"%{claimed_identity}%"))
-                            ).first()
-                            if member and member.enrollments:
-                                enrolled_embs = [
-                                    np.asarray(e.embedding, dtype=np.float32)
-                                    for e in member.enrollments
-                                    if e.embedding is not None
-                                ]
-                                if enrolled_embs:
-                                    probe_audio = AudioData(samples=eval_window, sr=sample_rate)
-                                    try:
-                                        probe_emb = compute_embedding(probe_audio)
-                                    except Exception:
-                                        probe_emb = None
-                                    if probe_emb is not None:
-                                        sims = [float(cosine_similarity(emb, probe_emb)) for emb in enrolled_embs]
-                                        best_sim = max(sims)
-                                        threshold = SETTINGS.verify_similarity_threshold
-                                        is_match = best_sim >= threshold
-                                        speaker_info = {
-                                            "matched": is_match,
-                                            "similarity": round(best_sim, 3),
-                                            "threshold": threshold,
-                                            "name": member.name,
-                                            "relationship": member.relationship or "Enrolled Member",
-                                        }
-                                        if not is_match and current_risk > 0.20:
-                                            current_risk = min(1.0, current_risk + 0.25)
-                                    else:
-                                        speaker_info = {
-                                            "matched": False,
-                                            "similarity": 0.0,
-                                            "threshold": SETTINGS.verify_similarity_threshold,
-                                            "name": member.name,
-                                            "relationship": member.relationship or "Enrolled Member",
-                                            "note": "Acoustic probe too short or degraded",
-                                        }
-                        finally:
-                            db.close()
-                    except Exception:
-                        pass
+                            probe_emb = compute_embedding(probe_audio)
+                        except Exception:  # noqa: BLE001
+                            probe_emb = None
+                        if probe_emb is not None:
+                            decision = verify_claimed(
+                                probe_emb,
+                                enrolled_embs,
+                                claimed_profile["cohort"],
+                                threshold=SETTINGS.verify_similarity_threshold,
+                            )
+                            if decision:
+                                is_match = decision["is_match"]
+                                speaker_info = {
+                                    "matched": is_match,
+                                    "similarity": decision["best_similarity"],
+                                    "separation": decision["separation"],
+                                    "confidence_level": decision["confidence_level"],
+                                    "threshold": SETTINGS.verify_similarity_threshold,
+                                    "name": member.name,
+                                    "relationship": member.relationship or "Enrolled Member",
+                                }
+                                if not is_match and current_risk > 0.20:
+                                    current_risk = min(1.0, current_risk + 0.25)
+                            else:
+                                speaker_info = {
+                                    "matched": False,
+                                    "similarity": 0.0,
+                                    "threshold": SETTINGS.verify_similarity_threshold,
+                                    "name": member.name,
+                                    "relationship": member.relationship or "Enrolled Member",
+                                    "note": "Incompatible embedded profile",
+                                }
+                        else:
+                            speaker_info = {
+                                "matched": False,
+                                "similarity": 0.0,
+                                "threshold": SETTINGS.verify_similarity_threshold,
+                                "name": member.name,
+                                "relationship": member.relationship or "Enrolled Member",
+                                "note": "Acoustic probe too short or degraded",
+                            }
+                    else:
+                        speaker_info = {
+                            "matched": None,
+                            "similarity": None,
+                            "threshold": SETTINGS.verify_similarity_threshold,
+                            "name": member.name,
+                            "relationship": member.relationship or "Enrolled Member",
+                            "note": "No enrolled voice samples yet",
+                        }
 
                 if current_risk > max_risk_observed:
                     max_risk_observed = current_risk
@@ -214,17 +368,16 @@ async def live_call_websocket(websocket: WebSocket):
                     "dynamic_risk_score": round(current_risk, 3),
                     "liveness_score": telemetry["liveness_score"],
                     "vocoder_anomaly": telemetry["vocoder_anomaly"],
-                    "clone_score": telemetry.get("clone_score"),
+                    "wav2vec2_fake_probability": telemetry.get("wav2vec2_fake_probability"),
                     "dhwani_fake_probability": telemetry.get("dhwani_fake_probability"),
+                    "large_fake_probability": telemetry.get("large_fake_probability"),
+                    "fusion": telemetry.get("fusion"),
                     "pitch_stability": telemetry["pitch_stability"],
                     "micro_jitter": telemetry["micro_jitter"],
                     "telephony_mode": telemetry["telephony_mode"],
                     "fingerprint": telemetry["fingerprint"],
                     "speaker_match": speaker_info,
-                    "verdict": (
-                        "CRITICAL_IMPERSONATION" if current_risk >= 0.52
-                        else ("BORDERLINE_SUSPICIOUS" if current_risk >= 0.28 else "GENUINE_HUMAN")
-                    ),
+                    "verdict": telemetry["verdict"],
                     "alert": telemetry["alert"],
                     "recommended_action": (
                         "TERMINATE_AND_CHALLENGE_WITH_OUT_OF_BAND_AUTH" if current_risk >= 0.52
@@ -236,157 +389,11 @@ async def live_call_websocket(websocket: WebSocket):
 
     except WebSocketDisconnect:
         pass
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         import traceback
+
         traceback.print_exc()
         try:
             await websocket.send_json({"type": "error", "message": str(exc)})
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
-
-
-@router.post("/simulate", summary="Simulate live telephony stream using pre-recorded scenarios")
-def simulate_scenario(req: SimulationRequest) -> dict[str, Any]:
-    """Provides instant simulation of live call streaming with realistic timeline telemetry."""
-    detector = VoiceSpoofDetector(SETTINGS)
-    ledger = get_blockchain_ledger()
-
-    # Determine audio file for scenario
-    sample_dir = SETTINGS.data_dir / "samples"
-    test_dir = SETTINGS.data_dir.parent / "testing set"
-
-    if req.scenario == "cloned_ceo":
-        # Target: AI generated voice with executive impersonation
-        audio_file = test_dir / "ai_generated_voice.wav"
-        if not audio_file.exists():
-            audio_file = sample_dir / "scam_courier.wav"
-        caller = req.caller_id or "+91 99880 12345"
-        claimed = req.claimed_identity or "CEO Rajesh Nair"
-        scenario_title = "Executive Impersonation: Cloned CEO Demanding Urgent Wire Transfer"
-    elif req.scenario == "digital_arrest":
-        audio_file = sample_dir / "scam_digital_arrest.wav"
-        caller = req.caller_id or "+91 80001 99999"
-        claimed = req.claimed_identity or "DCP Cyber Crime Cell"
-        scenario_title = "Government Impersonation: Fraudulent Digital Arrest Demand"
-    elif req.scenario == "genuine_cxo":
-        audio_file = test_dir / "natural_voice.wav"
-        if not audio_file.exists():
-            audio_file = sample_dir / "benign_family.wav"
-        caller = req.caller_id or "+91 98200 55443"
-        claimed = req.claimed_identity or "CFO Priya Sharma"
-        scenario_title = "Authorized Executive: Genuine CFO Routine Authorization Call"
-    else:
-        audio_file = sample_dir / "benign_restaurant.wav"
-        caller = req.caller_id or "+91 91234 56789"
-        claimed = req.claimed_identity or "Customer Support"
-        scenario_title = "Benign Telephony Conversation"
-
-    if not audio_file.exists():
-        raise HTTPException(status_code=404, detail=f"Reference sample audio file '{audio_file.name}' not found.")
-
-    audio_data = load_audio_16k(audio_file)
-    x = audio_data.samples
-    sr = audio_data.sr
-
-    # Generate sliding window chunks (every 1 second)
-    chunk_len = int(sr * 2.0)
-    hop = int(sr * 1.0)
-    timeline = []
-    max_risk = 0.0
-
-    for i in range(0, len(x) - chunk_len + 1, hop):
-        window = x[i : i + chunk_len]
-        res = detector.analyze_live_chunk(window, sr=sr)
-        risk = res["dynamic_risk_score"]
-        if risk > max_risk:
-            max_risk = risk
-
-        sec_start = round(i / sr, 1)
-        sec_end = round((i + chunk_len) / sr, 1)
-        timeline.append({
-            "timestamp_offset": f"{sec_start}s - {sec_end}s",
-            "dynamic_risk_score": risk,
-            "liveness_score": res["liveness_score"],
-            "vocoder_anomaly": res["vocoder_anomaly"],
-            "pitch_stability": res["pitch_stability"],
-            "micro_jitter": res["micro_jitter"],
-            "verdict": res["verdict"],
-            "alert": res["alert"],
-        })
-
-    # Run full clip multi-layer combined engine analysis (Dhwani + Vocoder DSP + Acoustic Ensemble)
-    full_res = detector.analyze(audio_data)
-    if full_res.get("score") is not None and full_res["score"] > max_risk:
-        max_risk = full_res["score"]
-
-    # Record certificate in Blockchain Ledger
-    final_verdict = "CRITICAL_FRAUD_ATTEMPT" if max_risk >= 0.52 else ("BORDERLINE_SUSPICIOUS" if max_risk >= 0.30 else "AUTHENTIC_HUMAN")
-    block = ledger.record_verification(
-        caller_id=caller,
-        claimed_identity=claimed,
-        audio_bytes_or_hash=hashlib.sha256(x.tobytes()).hexdigest(),
-        risk_score=max_risk,
-        verdict=final_verdict,
-        vocoder_fingerprint="simulation_" + req.scenario,
-        telemetry={
-            "duration_seconds": round(len(x) / sr, 2),
-            "scenario": req.scenario,
-            "engine": full_res.get("engine"),
-            "dhwani_fake_probability": full_res.get("metrics", {}).get("dhwani_fake_probability"),
-        },
-    )
-
-    return {
-        "scenario": req.scenario,
-        "scenario_title": scenario_title,
-        "caller_id": caller,
-        "claimed_identity": claimed,
-        "duration_seconds": round(len(x) / sr, 2),
-        "peak_risk_score": max_risk,
-        "overall_verdict": final_verdict,
-        "engine": full_res.get("engine", "combined_hybrid_engine"),
-        "full_analysis": full_res,
-        "certificate_id": block["certificate_id"],
-        "block_hash": block["block_hash"],
-        "timeline": timeline,
-    }
-
-
-@router.get("/scenario-audio/{scenario}", summary="Stream reference WAV audio for simulated attack vectors")
-def get_scenario_audio(scenario: str) -> FileResponse:
-    """Returns the authentic reference audio file for a telephony scenario."""
-    sample_dir = SETTINGS.data_dir / "samples"
-    test_dir = SETTINGS.data_dir.parent / "testing set"
-
-    if scenario == "cloned_ceo":
-        audio_file = test_dir / "ai_generated_voice.wav"
-        if not audio_file.exists():
-            audio_file = sample_dir / "scam_courier.wav"
-    elif scenario == "digital_arrest":
-        audio_file = sample_dir / "scam_digital_arrest.wav"
-    elif scenario == "genuine_cxo":
-        audio_file = test_dir / "natural_voice.wav"
-        if not audio_file.exists():
-            audio_file = sample_dir / "benign_family.wav"
-    else:
-        audio_file = sample_dir / "benign_restaurant.wav"
-
-    if not audio_file.exists():
-        raise HTTPException(status_code=404, detail="Scenario audio not found")
-    return FileResponse(path=str(audio_file), media_type="audio/wav")
-
-
-@router.get("/sample-file/{filename}", summary="Retrieve reference benchmark testing samples")
-def get_sample_file(filename: str) -> FileResponse:
-    """Returns benchmark sample files such as ai_generated_voice.wav or natural_voice.wav."""
-    test_dir = SETTINGS.data_dir.parent / "testing set"
-    sample_dir = SETTINGS.data_dir / "samples"
-
-    target = test_dir / filename
-    if not target.exists():
-        target = sample_dir / filename
-    if not target.exists():
-        raise HTTPException(status_code=404, detail=f"Sample file '{filename}' not found.")
-
-    return FileResponse(path=str(target), media_type="audio/wav")
-

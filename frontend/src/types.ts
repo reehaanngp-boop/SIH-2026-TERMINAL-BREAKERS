@@ -291,6 +291,10 @@ export interface VoiceMatchItem {
   owner_ref?: string | null;
   similarity: number;
   match: boolean;
+  separation?: number;
+  cohort_mean_similarity?: number;
+  confidence?: number;
+  confidence_level?: string;
 }
 
 export interface VoiceMatchResult {
@@ -308,6 +312,7 @@ export interface PhoneRecord {
   last_seen: string;
   notes?: string | null;
   linked_cases: string[];
+  risk_level?: string;
 }
 
 export interface PhoneLookup {
@@ -382,7 +387,6 @@ export type NavKey =
   | "live-call"
   | "dashboard"
   | "analyze"
-  | "media-auth"
   | "registry"
   | "blockchain"
   | "assistant"

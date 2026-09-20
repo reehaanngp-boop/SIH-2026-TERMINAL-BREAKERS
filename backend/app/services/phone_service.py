@@ -12,8 +12,34 @@ from app.db.models import Case, Person, ReportedNumber
 
 
 def _normalize(phone: str) -> str:
-    digits = "".join(ch for ch in phone if ch.isdigit() or ch == "+")
+    """Reduce a phone number to one canonical form for lookups.
+
+    Callers store numbers in inconsistent formats (``+919988012345``,
+    ``919988012345``, ``09988012345``, ``9988012345``). Comparing them
+    verbatim silently misses matches, so we drop non-digits, then strip the
+    Indian country code ``91`` and the legacy trunk ``0`` prefix. Every path
+    (report, lookup, case/person linking) normalizes through this same
+    function, which is what makes the ledger consistent.
+    """
+    digits = "".join(ch for ch in phone if ch.isdigit())
+    if len(digits) >= 12 and digits.startswith("91"):
+        digits = digits[2:]
+    elif len(digits) == 11 and digits.startswith("0"):
+        digits = digits[1:]
     return digits
+
+
+def _risk_level(record) -> str:
+    """Derive a human-facing risk tier from ledger state."""
+    if record.status == "verified_fraud":
+        return "high"
+    if record.status == "cleared":
+        return "low"
+    if record.count >= 3:
+        return "high"
+    if record.count >= 2:
+        return "medium"
+    return "monitored"
 
 
 def linked_case_titles(db: Session, phone: str) -> list[str]:

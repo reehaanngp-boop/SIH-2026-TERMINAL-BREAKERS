@@ -388,20 +388,6 @@ export const api = {
     });
   },
 
-  // -- Real-Time Live Stream & Telephony Simulator ---------------------------
-  simulateStream(scenario: string, claimedIdentity?: string, callerId?: string): Promise<any> {
-    return request("/stream/simulate", {
-      method: "POST",
-      body: JSON.stringify({ scenario, claimed_identity: claimedIdentity, caller_id: callerId }),
-    });
-  },
-  getScenarioAudioUrl(scenario: string): string {
-    return `/api/v1/stream/scenario-audio/${encodeURIComponent(scenario)}`;
-  },
-  getSampleFileUrl(filename: string): string {
-    return `/api/v1/stream/sample-file/${encodeURIComponent(filename)}`;
-  },
-
   // -- Blockchain Audit Trail & Verification ----------------------------------
   getBlockchainLedger(limit = 50): Promise<{ status: string; count: number; total_in_chain: number; blocks: any[] }> {
     return request(`/blockchain/ledger?limit=${limit}`);

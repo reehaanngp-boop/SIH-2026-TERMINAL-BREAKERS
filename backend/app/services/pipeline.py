@@ -29,7 +29,7 @@ class AnalysisPipeline:
     def analyze_transcript(
         self, text: str, language_hint: str | None = None, skip_ai: bool = False
     ) -> dict[str, Any]:
-        scam = self.detectors.scam.classify(text)
+        scam = self.detectors.scam.classify(text, language=language_hint)
         result = assess(
             media_type="text",
             asr=None,
@@ -107,7 +107,7 @@ class AnalysisPipeline:
         scam_res = None
         if transcript and transcript.strip():
             _p(0.90, "Scanning for scam-script patterns")
-            scam_res = self.detectors.scam.classify(transcript)
+            scam_res = self.detectors.scam.classify(transcript, language=language)
 
         _p(0.95, "Aggregating risk & consulting AI shield")
         result = assess(

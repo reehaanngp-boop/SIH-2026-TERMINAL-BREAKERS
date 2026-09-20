@@ -220,6 +220,9 @@ class VoiceMatchItem(BaseModel):
     owner_id: str
     owner_ref: str | None = None
     similarity: float
+    separation: float | None = None
+    cohort_mean_similarity: float | None = None
+    confidence: float | None = None
     match: bool
 
 
@@ -237,6 +240,7 @@ class PhoneRecordOut(BaseModel):
     phone: str
     status: str
     count: int
+    risk_level: str | None = None
     first_seen: str
     last_seen: str
     notes: str | None = None

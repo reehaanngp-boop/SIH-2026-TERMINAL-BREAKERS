@@ -58,38 +58,26 @@ def test_blockchain_ledger_tamper_proof(tmp_path):
     assert is_valid is False  # Tampering detected!
 
 
-def test_api_stream_simulation():
+def test_api_stream_testing_endpoints_removed():
+    """Threat-simulation and benchmark sample endpoints were removed.
+
+    Unknown paths fall through to the SPA catch-all, so removal is asserted
+    via method/status and content-type rather than a clean 404.
+    """
     app = create_app()
     client = TestClient(app)
 
-    # Simulate Cloned CEO Scenario
-    res_clone = client.post(
+    res_simulate = client.post(
         "/api/v1/stream/simulate",
-        json={
-            "scenario": "cloned_ceo",
-            "claimed_identity": "CEO Priya Sharma",
-            "caller_id": "+91 99880 12345",
-        },
+        json={"scenario": "cloned_ceo"},
     )
-    assert res_clone.status_code == 200
-    data_clone = res_clone.json()
-    assert data_clone["scenario"] == "cloned_ceo"
-    assert "certificate_id" in data_clone
-    assert len(data_clone["timeline"]) > 0
+    assert res_simulate.status_code in (404, 405)
 
-    # Simulate Genuine CXO Scenario
-    res_genuine = client.post(
-        "/api/v1/stream/simulate",
-        json={
-            "scenario": "genuine_cxo",
-            "claimed_identity": "CFO Rajesh Nair",
-            "caller_id": "+91 98200 55443",
-        },
-    )
-    assert res_genuine.status_code == 200
-    data_genuine = res_genuine.json()
-    assert data_genuine["scenario"] == "genuine_cxo"
-    assert data_genuine["overall_verdict"] == "AUTHENTIC_HUMAN"
+    res_audio = client.get("/api/v1/stream/scenario-audio/cloned_ceo")
+    assert res_audio.headers.get("content-type", "") != "audio/wav"
+
+    res_sample = client.get("/api/v1/stream/sample-file/ai_generated_voice.wav")
+    assert res_sample.headers.get("content-type", "") != "audio/wav"
 
 
 def test_api_blockchain_endpoints():

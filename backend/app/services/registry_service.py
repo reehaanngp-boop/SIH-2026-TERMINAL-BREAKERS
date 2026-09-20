@@ -23,9 +23,9 @@ from app.core.exceptions import EnrollmentError, MemberNotFoundError
 from app.db.models import FamilyMember, VoiceEnrollment
 from app.detectors.audio.audio_utils import AudioData
 from app.detectors.audio.speaker_verify import (
-    best_match,
     compute_embedding,
     embedding_engine,
+    verify_claimed,
 )
 from app.schemas.registry import FamilyMemberCreate
 
@@ -134,16 +134,50 @@ def verify_voice(
             "guidance": _guidance("incompatible", member.name),
         }
 
-    similarity, _ = best_match(probe, compatible)
-    match = bool(similarity is not None and similarity >= settings.verify_similarity_threshold)
+    # Cohort = every OTHER family member's enrolled embeddings. Comparing the
+    # similarity to the claimed profile against the similarity to everyone else
+    # (the "null model") turns absolute-threshold matching into a real decision.
+    other_enrollments: list[list[float]] = []
+    other_members = db.execute(
+        select(FamilyMember).where(FamilyMember.id != member.id)
+    ).scalars().unique().all()
+    for other in other_members:
+        for e in other.enrollments:
+            if e.embedding is not None and len(e.embedding) == dim:
+                other_enrollments.append(e.embedding)
+
+    decision = verify_claimed(
+        probe,
+        [e["embedding"] for e in compatible],
+        other_enrollments,
+        threshold=settings.verify_similarity_threshold,
+    )
+    if decision is None:
+        return {
+            "member_id": member.id,
+            "member_name": member.name,
+            "match": None,
+            "similarity": None,
+            "threshold": settings.verify_similarity_threshold,
+            "engine": embedding_engine(),
+            "reason": "incompatible",
+            "guidance": _guidance("incompatible", member.name),
+        }
+
+    match = decision["is_match"]
     return {
         "member_id": member.id,
         "member_name": member.name,
         "match": match,
-        "similarity": round(similarity, 4) if similarity is not None else None,
+        "similarity": decision["best_similarity"],
         "threshold": settings.verify_similarity_threshold,
         "engine": embedding_engine(),
         "reason": None,
+        "separation": decision["separation"],
+        "cohort_mean_similarity": decision["cohort_mean_similarity"],
+        "confidence": decision["confidence"],
+        "confidence_level": decision["confidence_level"],
+        "samples_compared": decision["samples_compared"],
         "guidance": _guidance("match" if match else "mismatch", member.name),
     }
 

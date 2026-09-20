@@ -94,6 +94,7 @@ def assess(
     flags: list[dict] = []
     steps: list[dict] = []
     dim_risks: dict[str, float] = {}
+    ai_voice_detected = False
 
     # ---- Voice dimension -------------------------------------------------
     voice_signal = _signal("voice", voice)
@@ -106,6 +107,7 @@ def assess(
             dim_risks["voice"] = vs
             if vs >= 0.55 or label == "likely-ai-generated":
                 flags.append(_lazy_flag("voice-ai-likely"))
+                ai_voice_detected = True
             elif vs >= 0.38 or label == "borderline-suspicious":
                 flags.append(_lazy_flag("voice-artifacts"))
         else:
@@ -200,6 +202,13 @@ def assess(
         score = min(1.0, score * 1.05)
 
     score100 = round(score * 100.0, 1)
+    terminate_call = False
+    if ai_voice_detected:
+        # AASIST-style hard gate: model-backed confirmation of a synthetic /
+        # cloned voice forces the highest risk tier and a terminate-call
+        # instruction, even when the transcript looks benign.
+        score100 = max(score100, 70.0)
+        terminate_call = True
     if score100 >= MEDIUM_HIGH:
         level = "high"
     elif score100 >= LOW_MEDIUM:
@@ -208,6 +217,8 @@ def assess(
         level = "low"
 
     # ---- Next steps ----------------------------------------------------------
+    if terminate_call:
+        steps.append(_next_step("terminate-call"))
     if level == "high":
         steps.append(_next_step("verify-official"))
         steps.append(_next_step("no-otp"))
@@ -249,6 +260,7 @@ def assess(
         "next_steps": valid_steps,
         "transcript": transcript,
         "language": language,
+        "terminate_call": terminate_call,
     }
 
 

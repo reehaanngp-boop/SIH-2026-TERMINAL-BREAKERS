@@ -36,6 +36,13 @@ class VerifyResult(BaseModel):
     member_id: str
     member_name: str
     match: bool
-    similarity: float = Field(..., ge=-1, le=1, description="cosine similarity against the best enrolled sample")
+    similarity: float = Field(..., ge=-1, le=1, description="best cosine similarity against the claimed member's enrolled samples")
     threshold: float
+    separation: float | None = Field(None, description="best_similarity minus mean similarity against other enrolled speakers")
+    cohort_mean_similarity: float | None = None
+    confidence: float | None = Field(None, ge=0, le=1)
+    confidence_level: str | None = None
+    samples_compared: int | None = None
+    engine: str | None = None
+    reason: str | None = None
     guidance: dict  # LocalizedText-style guidance per outcome

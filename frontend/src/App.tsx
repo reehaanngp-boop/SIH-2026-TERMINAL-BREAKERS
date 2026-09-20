@@ -19,7 +19,6 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { VoiceMatchPage } from "./pages/VoiceMatchPage";
 import { LiveCallPage } from "./pages/LiveCallPage";
 import { BlockchainPage } from "./pages/BlockchainPage";
-import { MediaAuthPage } from "./pages/MediaAuthPage";
 import { AiAssistantWidget } from "./components/AiAssistantWidget";
 
 type AuthState = "loading" | "offline" | "setup" | "login" | "app";
@@ -230,9 +229,6 @@ export default function App() {
       break;
     case "settings":
       page = <SettingsPage />;
-      break;
-    case "media-auth":
-      page = <MediaAuthPage />;
       break;
     default:
       page = <DashboardPage />;

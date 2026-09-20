@@ -197,12 +197,31 @@ class ScamClassifierDetector(BaseDetector):
             "indicators": matched_indicators[:6],
         }
 
-    def classify(self, text: str) -> dict[str, Any]:
+    def classify(self, text: str, language: str | None = None) -> dict[str, Any]:
+        """Classify a transcript for scam-script patterns.
+
+        ``language`` is the Whisper-detected language code (e.g. ``'hi'``,
+        ``'ta'``). It is carried through into the metrics so callers and the
+        console can show *which* language the classification ran on. The rule
+        engine already matches threat signatures in English, Hindi, Tamil,
+        Telugu, Kannada and Malayalam, so a strong rule match is credited
+        regardless of language, while a language hint can nudge uncertain
+        verdicts toward the categories whose signatures appear in that script.
+        """
         if not text or not text.strip():
-            return self._result("available", score=None, label="no-text", detail="No text to classify.")
+            res = self._result("available", score=None, label="no-text", detail="No text to classify.")
+            if language:
+                res["metrics"]["language"] = language
+            return res
 
         cleaned = text[:MAX_LEN]
         rule_res = self._rule_based_classify(cleaned)
+
+        def _annotate(res: dict[str, Any]) -> dict[str, Any]:
+            if language:
+                res["metrics"]["language"] = language
+                res["metrics"]["language_hint"] = True
+            return res
 
         pipeline = self._ensure_pipeline()
         if pipeline is None:
@@ -210,7 +229,7 @@ class ScamClassifierDetector(BaseDetector):
             cat = rule_res["category"]
             conf = rule_res["confidence"]
             confident = rule_res["confident"] and cat not in ("benign", "neutral")
-            return self._result(
+            return _annotate(self._result(
                 "available",
                 score=conf if confident else 0.1,
                 label=cat if confident else "uncertain",
@@ -228,7 +247,7 @@ class ScamClassifierDetector(BaseDetector):
                     "indicators": rule_res["indicators"],
                 },
                 engine="rule_heuristics",
-            )
+            ))
 
         try:
             proba = pipeline.predict_proba([cleaned])[0]
@@ -250,7 +269,7 @@ class ScamClassifierDetector(BaseDetector):
             confident = best_prob >= CONFIDENCE_FLOOR and (
                 best_class in ("benign", "neutral") or best_prob - non_scam >= BENIGN_MARGIN
             )
-            return self._result(
+            return _annotate(self._result(
                 "available",
                 score=best_prob,
                 label=best_class if confident else "uncertain",
@@ -267,13 +286,13 @@ class ScamClassifierDetector(BaseDetector):
                     "indicators": rule_res["indicators"],
                 },
                 engine="joblib+heuristics",
-            )
+            ))
         except Exception as exc:
             # Fallback to rule result on ML execution error
             cat = rule_res["category"]
             conf = rule_res["confidence"]
             confident = rule_res["confident"]
-            return self._result(
+            return _annotate(self._result(
                 "available",
                 score=conf if confident else 0.1,
                 label=cat if confident else "uncertain",
@@ -286,4 +305,4 @@ class ScamClassifierDetector(BaseDetector):
                     "error": str(exc),
                 },
                 engine="rule_heuristics_fallback",
-            )
+            ))

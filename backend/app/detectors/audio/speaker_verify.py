@@ -233,6 +233,88 @@ def best_match(probe: np.ndarray, enrollments: list[dict[str, Any]]) -> tuple[fl
     return float(best_sim), best_idx
 
 
+def verify_claimed(
+    probe: np.ndarray,
+    claimed: list[np.ndarray | list[float]],
+    others: list[np.ndarray | list[float]],
+    threshold: float = 0.5,
+    min_separation: float = 0.12,
+) -> dict[str, Any] | None:
+    """Decision-aware speaker verification against an enrolled profile.
+
+    Raw cosine similarity alone is unreliable on short / phone-degraded clips.
+    A single absolute threshold either accepts impostors (threshold too low) or
+    rejects genuine speakers (too high). Instead we use a **cohort null-model**:
+
+    * ``best_sim`` — best cosine vs the claimed member's enrolled samples.
+    * ``centroid_sim`` — cosine vs the mean of the claimed enrollments.
+    * ``cohort_mean`` — mean cosine vs *other* enrolled speakers. This is the
+      expected similarity the probe would show for a random impostor; on real
+      VoxCeleb embeddings different speakers sit around 0.1-0.3 while the same
+      speaker sits around 0.6-0.9.
+    * ``separation`` = ``best_sim - cohort_mean``. A probe that scores high
+      against the claimed profile but equally high against everyone else is an
+      impostor or a low-quality clip, not a match.
+
+    A match requires BOTH an absolute floor and a separation margin, which
+    removes the classic "accepts everything" / "rejects everyone" failure modes.
+    """
+    if probe is None:
+        return None
+    claimed_vecs = [np.asarray(e, dtype=np.float32) for e in claimed if e is not None]
+    expected = int(len(probe))
+    claimed_vecs = [v for v in claimed_vecs if v.ndim == 1 and len(v) == expected]
+    if not claimed_vecs:
+        return None
+
+    sims = [cosine_similarity(probe, v) for v in claimed_vecs]
+    best_sim = max(sims)
+
+    centroid = np.mean(claimed_vecs, axis=0)
+    cnorm = float(np.linalg.norm(centroid))
+    centroid_sim = float(cosine_similarity(probe, centroid / cnorm)) if cnorm > 1e-9 else best_sim
+
+    other_vecs = [np.asarray(o, dtype=np.float32) for o in others if o is not None]
+    other_vecs = [v for v in other_vecs if v.ndim == 1 and len(v) == expected]
+    if other_vecs:
+        cohort_mean = float(np.mean([cosine_similarity(probe, v) for v in other_vecs]))
+    else:
+        # No cohort enrolled: fall back to a neutral prior so the decision is
+        # still driven by the absolute similarity floor.
+        cohort_mean = float(best_sim * 0.35)
+
+    separation = float(best_sim - cohort_mean)
+    is_match = bool(best_sim >= threshold and separation >= min_separation)
+    confidence = float(max(0.0, min(0.99, 0.30 + best_sim * 0.45 + separation * 0.60)))
+    conf_label = (
+        "high" if (best_sim >= 0.70 and separation >= 0.30)
+        else ("medium" if is_match or (best_sim >= 0.55 and separation >= 0.10) else "low")
+    )
+    return {
+        "best_similarity": round(float(best_sim), 4),
+        "centroid_similarity": round(centroid_sim, 4),
+        "cohort_mean_similarity": round(cohort_mean, 4),
+        "separation": round(separation, 4),
+        "samples_compared": len(claimed_vecs),
+        "is_match": is_match,
+        "confidence": round(confidence, 4),
+        "confidence_level": conf_label,
+    }
+
+
+def has_usable_speech(audio: AudioData, min_seconds: float = 0.8) -> bool:
+    """Cheap gate: does this clip contain enough voiced audio to embed reliably?"""
+    y = audio.samples
+    if y is None or audio.duration is None:
+        return False
+    if audio.duration < min_seconds:
+        return False
+    peak = float(np.max(np.abs(y))) if len(y) else 0.0
+    if peak < 0.02:
+        return False
+    return True
+
+
 def _trim_silence(y: np.ndarray, sr: int, *, top_db: int = 30) -> np.ndarray:
     """Remove leading/trailing frames quieter than ``top_db`` relative to peak."""
     try:

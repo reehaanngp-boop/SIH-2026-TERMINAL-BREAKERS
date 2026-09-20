@@ -60,21 +60,40 @@ def match_voice(db: Session, audio) -> dict:
 
     results = []
     threshold = settings.verify_similarity_threshold
+    min_separation = 0.12
     expected = int(len(probe))
     skipped_legacy = 0
+
+    sims: list[dict] = []
     for c in candidates:
         emb = c["embedding"]
         if len(emb) != expected:  # old-model embedding, not comparable
             skipped_legacy += 1
             continue
-        sim = cosine_similarity(probe, emb)
+        sims.append({
+            **c,
+            "sim": cosine_similarity(probe, emb),
+        })
+
+    for c in sims:
+        # Cohort null-model: a probe that is equally "similar" to every stored
+        # voice is unlikely to be any of them. The match needs both an absolute
+        # floor and a separation margin against all OTHER candidates.
+        peers = [o["sim"] for o in sims if o["owner_id"] != c["owner_id"]]
+        cohort_mean = float(sum(peers) / len(peers)) if peers else float(c["sim"] * 0.35)
+        separation = float(c["sim"] - cohort_mean)
+        is_match = c["sim"] >= threshold and separation >= min_separation
+        confidence = float(max(0.0, min(0.99, 0.30 + c["sim"] * 0.45 + separation * 0.60)))
         results.append({
             "label": c["label"],
             "owner_kind": c["owner_kind"],
             "owner_id": c["owner_id"],
             "owner_ref": names.get((c["owner_kind"], c["owner_id"])),
-            "similarity": round(sim, 4),
-            "match": sim >= threshold,
+            "similarity": round(c["sim"], 4),
+            "separation": round(separation, 4),
+            "cohort_mean_similarity": round(cohort_mean, 4),
+            "confidence": round(confidence, 4),
+            "match": is_match,
         })
     results.sort(key=lambda r: r["similarity"], reverse=True)
 

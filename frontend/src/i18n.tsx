@@ -17,7 +17,6 @@ const DICT: Record<string, Entry> = {
   "nav.phone": { en: "Phone Intelligence", hi: "फ़ोन खुफिया" },
   "nav.registry": { en: "Safe-Voice Registry", hi: "सेफ-वॉइस रजिस्ट्री" },
   "nav.blockchain": { en: "Evidence Ledger", hi: "साक्ष्य लेजर" },
-  "nav.media-auth": { en: "Media Authenticity", hi: "मीडिया प्रामाणिकता" },
   "nav.history": { en: "History", hi: "इतिहास" },
   "nav.settings": { en: "Settings", hi: "सेटिंग्स" },
   "nav.about": { en: "About", hi: "परिचय" },
@@ -157,11 +156,6 @@ const DICT: Record<string, Entry> = {
   // Live Call Sentinel & Telephony Security
   "sentinel.ticker.online": { en: "CORE SENTINEL", hi: "मुख्य सेंटिनल" },
   "sentinel.ticker.compliance": { en: "Section 65B Bharatiya Sakshya Adhiniyam Certified", hi: "धारा 65B भारतीय साक्ष्य अधिनियम प्रमाणित" },
-  "scenario.ceo.title": { en: "Executive Wire Fraud (Cloned Voice)", hi: "कार्यकारी वायर धोखाधड़ी (क्लोन आवाज)" },
-  "scenario.arrest.title": { en: "Digital Arrest Coercion (DCP Cyber)", hi: "डिजिटल अरेस्ट दबाव (DCP साइबर)" },
-  "scenario.genuine.title": { en: "Routine Briefing (Genuine CFO)", hi: "नियमित बातचीत (वास्तविक CFO)" },
-  "btn.run_sim": { en: "Run Telephony Attack Simulation", hi: "टेलीफ़ोनी हमला अनुकरण चलाएँ" },
-  "btn.stop_sim": { en: "End Call / Terminate", hi: "कॉल समाप्त करें" },
   "btn.connect_mic": { en: "Connect Live Stream", hi: "लाइव स्ट्रीम कनेक्ट करें" },
   "btn.stop_mic": { en: "Disconnect Call", hi: "कॉल डिस्कनेक्ट करें" },
   "sentinel.action.title": { en: "Recommended Immediate Actions", hi: "अनुशंसित त्वरित कार्रवाई" },
@@ -330,17 +324,12 @@ const DICT: Record<string, Entry> = {
   "settings.key_valid": { en: "OpenRouter AI Connected Successfully!", hi: "OpenRouter AI सफलतापूर्वक कनेक्ट हो गया!" },
   "settings.key_invalid": { en: "Connection Failed: Check API Key", hi: "कनेक्शन विफल: API कुंजी जांचें" },
 
-  // General fields & Media Auth
+  // General fields
   "case.priority": { en: "Priority", hi: "प्राथमिकता" },
   "field.description": { en: "Description", hi: "विवरण" },
   "field.count": { en: "Count", hi: "संख्या" },
   "field.phone_num": { en: "Phone Number", hi: "फ़ोन नंबर" },
   "field.status": { en: "Status", hi: "स्थिति" },
-  "media_auth.title": { en: "Media Authenticity Checker", hi: "मीडिया प्रामाणिकता परीक्षक" },
-  "media_auth.sub": {
-    en: "Detect AI voice cloning, audio manipulation, and deepfake content in uploaded audio or video files",
-    hi: "अपलोड की गई ऑडियो या वीडियो फ़ाइलों में AI आवाज़ क्लोनिंग, हेरफेर और डीपफेक सामग्री की पहचान करें",
-  },
 };
 
 

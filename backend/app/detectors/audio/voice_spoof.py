@@ -29,6 +29,9 @@ from app.detectors.base import BaseDetector
 
 SAMPLE_RATE = 16000
 SPEECH_RMS_THRESHOLD = 0.008
+LIVE_BUFFER_MAX = SAMPLE_RATE * 15          # rolling store for slower, higher-accuracy engines
+DHWANI_THROTTLE_SAMPLES = int(SAMPLE_RATE * 2.4)  # re-run Dhwani once ~2.4s of audio has arrived
+LARGE_THROTTLE_SAMPLES = int(SAMPLE_RATE * 5.0)   # large wav2vec specialist runs at most every ~5s
 
 from app.detectors.audio.vocoder_analyzer import VocoderAnalyzer
 from app.detectors.audio.dhwani_detector import DhwaniDetector
@@ -44,6 +47,16 @@ class VoiceSpoofDetector(BaseDetector):
         self.vocoder_analyzer = VocoderAnalyzer(SAMPLE_RATE)
         self.dhwani_detector = DhwaniDetector()
         self.wav2vec_detector = Wav2Vec2SpoofDetector(self.settings)
+        # Live-stream state: rolling buffer plus cursor/cooldown bookkeeping so
+        # the slow-but-decisive engines (Dhwani, wav2vec-large) contribute to
+        # every telemetry tick without stalling the real-time loop.
+        self._live_buffer = np.zeros(0, dtype=np.float32)
+        self._fed_samples = 0
+        self._dhwani_fed_at = -10**9
+        self._large_fed_at = -10**9
+        self._live_dhwani_p: float | None = None
+        self._live_large_p: float | None = None
+        self._live_high_streak = 0  # consecutive fused "fake" windows (debounce)
 
     def available(self) -> bool:
         return True
@@ -185,9 +198,22 @@ class VoiceSpoofDetector(BaseDetector):
     def analyze_live_chunk(self, x: np.ndarray, sr: int = SAMPLE_RATE) -> dict[str, Any]:
         """Low-latency streaming evaluation over a live sliding window.
 
-        Uses the fast base Wav2Vec2 classifier (model-backed, no heuristic
-        triggers). Falls back to Dhwani, then to vocoder telemetry with no
-        score escalation when no deep model is available.
+        The live path used to run the base Wav2Vec2 classifier only, which by
+        itself misses modern zero-shot clones (it reads ~0.002 on an XTTS
+        clone). The verdict now comes from the same three-model ensemble as the
+        file path:
+
+        * **Wav2Vec2 base** — every tick (fast, low latency).
+        * **Dhwani Multilingual (XLS-R + AASIST)** — re-run on the rolling
+          buffer every ~2.4s of arriving audio. It is the decisive signal for
+          modern neural clones, including audio played over a phone line.
+        * **Wav2Vec2 large** — corroboration against the rolling buffer every
+          ~5s, only while nothing decisive has fired yet.
+
+        Fusion mirrors ``wav2vec_spoof._fuse``: Dhwani's "fake" verdict is
+        trusted over a base "real" reading (that is the exact failure mode we
+        are closing), the large model corroborates but never overrides a
+        base+Dhwani consensus of "real", and the two agree -> safe.
         """
         if x is None or len(x) < 1600:
             return {
@@ -196,6 +222,9 @@ class VoiceSpoofDetector(BaseDetector):
                 "vocoder_anomaly": 0.0,
                 "pitch_stability": 1.0,
                 "micro_jitter": 0.012,
+                "wav2vec2_fake_probability": None,
+                "dhwani_fake_probability": None,
+                "large_fake_probability": None,
                 "verdict": "SAFE",
                 "alert": None,
                 "fingerprint": "insufficient_audio",
@@ -210,43 +239,100 @@ class VoiceSpoofDetector(BaseDetector):
                 "vocoder_anomaly": 0.0,
                 "pitch_stability": 1.0,
                 "micro_jitter": 0.012,
+                "wav2vec2_fake_probability": None,
+                "dhwani_fake_probability": None,
+                "large_fake_probability": None,
                 "verdict": "LISTENING (AMBIENT / SILENCE)",
                 "alert": None,
                 "fingerprint": "ambient_silence",
             }
 
+        # Roll the arrival into the shared buffer for the slower engines.
+        self._live_buffer = np.concatenate([self._live_buffer, x.astype(np.float32)])
+        if len(self._live_buffer) > LIVE_BUFFER_MAX:
+            self._live_buffer = self._live_buffer[-LIVE_BUFFER_MAX:]
+        self._fed_samples += int(len(x))
+
         vocoder_res = self.vocoder_analyzer.analyze_spectral_artifacts(x)
         voc_score = vocoder_res.get("vocoder_anomaly_score", 0.0)
-        p_dhwani = None
 
-        # Model-backed stream scoring: Wav2Vec2 base first (fast), Dhwani on demand.
+        # -- Signal 1: fast base Wav2Vec2 (every tick) ----------------------
         wv = self.wav2vec_detector.analyze_chunk(x, sample_rate=sr)
-        if wv.get("available"):
-            raw_risk = float(wv.get("fake_probability", 0.0))
-            model = "wav2vec2"
-            p_dhwani = None
-        elif self.dhwani_detector.available():
+        p_base = float(wv.get("fake_probability", 0.0)) if wv.get("available") else None
+
+        # -- Signal 2: Dhwani multilingual specialist (throttled) ------------
+        p_dhwani = self._live_dhwani_p
+        if (
+            self.dhwani_detector.available()
+            and self._fed_samples - self._dhwani_fed_at >= DHWANI_THROTTLE_SAMPLES
+        ):
+            tail = self._live_buffer[-int(SAMPLE_RATE * 3.0):]
             try:
-                dh_res = self.dhwani_detector.analyze(x)
+                dh_res = self.dhwani_detector.analyze(tail)
                 if dh_res.get("available"):
                     p_dhwani = float(dh_res.get("fake_probability", 0.0))
+                    self._live_dhwani_p = p_dhwani
+                    self._dhwani_fed_at = self._fed_samples
             except Exception:
-                p_dhwani = None
-            raw_risk = p_dhwani if p_dhwani is not None else voc_score
-            model = "dhwani" if p_dhwani is not None else "vocoder-only"
+                pass
+
+        # -- Signal 3: large clone-specialist wav2vec (corroboration only) ---
+        p_large = self._live_large_p
+        if len(self._live_buffer) >= int(SAMPLE_RATE * 2.0) and (
+            p_large is None or self._fed_samples - self._large_fed_at >= LARGE_THROTTLE_SAMPLES
+        ):
+            decisive = (p_base is not None and p_base >= 0.5) or (
+                p_dhwani is not None and p_dhwani >= 0.5
+            )
+            if not decisive:
+                tail = self._live_buffer[-int(SAMPLE_RATE * 8.0):]
+                try:
+                    big = self.wav2vec_detector.analyze(tail, sample_rate=SAMPLE_RATE, dhwani_probability=None)
+                    if big.get("available") and big.get("secondary", {}).get("available"):
+                        p_large = float(big["secondary"]["fake_probability"])
+                        self._live_large_p = p_large
+                        self._large_fed_at = self._fed_samples
+                except Exception:
+                    pass
+
+        # -- Three-signal live fusion (mirrors file-path _fuse) --------------
+        if p_dhwani is not None and p_dhwani >= 0.5:
+            raw_risk = max(p_base or 0.0, p_dhwani)
+            mode = "dhwani-fake"
+            model = "ensemble"
+        elif p_base is not None and p_base >= 0.5:
+            raw_risk = p_base
+            mode = "wav2vec-fake"
+            model = "ensemble"
+        elif p_large is not None and p_large >= 0.5:
+            if p_dhwani is not None and p_dhwani < 0.5:
+                raw_risk = min([p for p in (p_base, p_dhwani, p_large) if p is not None])
+                mode = "consensus-real"
+            else:
+                raw_risk = 0.30
+                mode = "disagreement"
+            model = "ensemble"
         else:
-            # No deep model: report vocoder telemetry without escalation so a
-            # benign VoIP call is never flagged from DSP alone.
-            raw_risk = min(voc_score, 0.30)
-            model = "vocoder-only"
+            raw_risk = min([p for p in (p_base, p_dhwani) if p is not None] or [0.0])
+            mode = "consensus-real"
+            model = "ensemble" if (p_base is not None or p_dhwani is not None) else "vocoder-only"
 
         dynamic_risk = round(float(np.clip(raw_risk, 0.0, 1.0)), 3)
         liveness = round(float(np.clip(1.0 - dynamic_risk, 0.0, 1.0)), 3)
 
+        # Debounce: a model spike on a single sliding window is not enough for
+        # a critical verdict (crop-positioning artifacts produce one-off high
+        # readings on genuine speech). CRITICAL requires two consecutive fused
+        # "fake" windows; a lone spike degrades to BORDERLINE.
         if dynamic_risk >= 0.50:
+            self._live_high_streak += 1
+        else:
+            self._live_high_streak = 0
+
+        if dynamic_risk >= 0.50 and self._live_high_streak >= 2:
             verdict = "CRITICAL_IMPERSONATION"
             alert = "HIGH RISK: Synthetic / AI Cloned Voice Detected. Suspected Impersonation Fraud. HALT high-risk actions."
-        elif dynamic_risk >= 0.28:
+        elif dynamic_risk >= 0.28 or (dynamic_risk >= 0.50 and self._live_high_streak < 2):
             verdict = "BORDERLINE_SUSPICIOUS"
             alert = "CAUTION: Model indicators suggest possible voice cloning. Challenge with out-of-band verification."
         else:
@@ -257,8 +343,10 @@ class VoiceSpoofDetector(BaseDetector):
             "dynamic_risk_score": dynamic_risk,
             "liveness_score": liveness,
             "vocoder_anomaly": round(voc_score, 3),
+            "wav2vec2_fake_probability": round(p_base, 3) if p_base is not None else None,
             "dhwani_fake_probability": round(p_dhwani, 3) if p_dhwani is not None else None,
-            "wav2vec2_fake_probability": round(float(wv.get("fake_probability", 0.0)), 3) if wv.get("available") else None,
+            "large_fake_probability": round(p_large, 3) if p_large is not None else None,
+            "fusion": mode,
             "model": model,
             "pitch_stability": 1.0,
             "micro_jitter": 0.0,

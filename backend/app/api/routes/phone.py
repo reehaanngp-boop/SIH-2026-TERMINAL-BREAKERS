@@ -28,6 +28,7 @@ def _record_out(record, linked_cases: list[str] | None = None) -> PhoneRecordOut
         last_seen=record.last_seen.isoformat() if record.last_seen else "",
         notes=record.notes,
         linked_cases=linked_cases or [],
+        risk_level=phone_service._risk_level(record),
     )
 
 

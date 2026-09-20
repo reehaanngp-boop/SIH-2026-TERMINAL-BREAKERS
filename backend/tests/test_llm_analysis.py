@@ -269,7 +269,7 @@ def test_ai_unavailable_status_has_no_effect():
 # ---------------------------------------------------------------------------
 
 class _FakeScam:
-    def classify(self, text):  # noqa: ARG002  (test double)
+    def classify(self, text, language=None):  # noqa: ARG002  (test double)
         return {
             "name": "text",
             "status": "available",

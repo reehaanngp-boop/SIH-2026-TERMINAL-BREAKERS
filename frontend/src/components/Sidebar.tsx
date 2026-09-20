@@ -16,7 +16,6 @@ export function Sidebar({ route, onNavigate }: { route: string; onNavigate: (r: 
     { key: "dashboard",   icon: "⊞",  label: t("nav.dashboard") },
     { key: "live-call",   icon: "⬤",  label: t("nav.live-call") },
     { key: "analyze",     icon: "⌕",  label: t("nav.analyze") },
-    { key: "media-auth",  icon: "🎧",  label: t("nav.media-auth") },
     { key: "assistant",   icon: "✦",  label: t("nav.assistant") },
     { key: "cases",       icon: "☰",  label: t("nav.cases") },
     { key: "evidence",    icon: "◈",  label: t("nav.evidence") },

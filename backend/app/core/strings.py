@@ -225,6 +225,14 @@ NEXT_STEPS: dict[str, dict] = {
             "hi": "वैध संस्थान कभी जल्दबाज़ी नहीं करते और गोपनीयता की ज़िद नहीं करते। संदेह होने पर कॉल बंद करें और स्वयं पुष्टि करें।",
         },
     },
+    "terminate-call": {
+        "kind": "generic",
+        "title": {"en": "TERMINATE the call — AI-generated voice detected", "hi": "कॉल समाप्त करें — AI-जनित आवाज़ का पता चला है"},
+        "detail": {
+            "en": "Model-backed classifiers confirm the caller's voice is synthetic or cloned (AASIST/wav2vec2/Dhwani). Do not share any information, OTP or money, and disconnect now.",
+            "hi": "मॉडल-आधारित क्लासिफ़ायर पुष्टि करते हैं कि कॉलर की आवाज़ सिंथेटिक या क्लोन की गई है। कोई जानकारी, OTP या पैसा साझा न करें और अभी कॉल समाप्त करें।",
+        },
+    },
 }
 
 RISK_LABELS: dict[str, dict] = {
